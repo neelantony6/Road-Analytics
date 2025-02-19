@@ -1,0 +1,64 @@
+📌 Coursework Brief: Road Traffic Accidents Data Visualization Website
+🎯 Objective
+Develop a web-based information system to provide the public with insights into road traffic accidents using interactive data visualizations. The system will fetch accident data from a Firebase Realtime Database and display it dynamically on a website hosted via Replit.
+
+1️⃣ Project Components
+🔹 Data Collection & Storage
+The dataset consists of road traffic accident statistics (e.g., total accidents, fatalities, trends).
+Data is stored in Firebase Realtime Database in JSON format.
+Python was used to clean and upload the dataset to Firebase.
+🔹 Data Visualizations (Using Plotly)
+Two interactive graphs have been generated with Plotly:
+
+Graph 1: Accident Trends Over Time (Line chart)
+Graph 2: State-wise Comparison (Bar chart)
+These graphs are saved as SVG and HTML files to be displayed on the website.
+2️⃣ Website Requirements
+🔹 Core Features
+✅ Fetch data from Firebase and display in a readable format.
+✅ Embed Plotly visualizations (interactive charts).
+✅ Responsive web design to work on desktops & mobile devices.
+✅ User-friendly interface with a clean layout.
+✅ Simple navigation for accessing different visualizations.
+
+🔹 Tech Stack
+📌 Frontend: HTML, CSS, JavaScript
+📌 Backend: Firebase (Realtime Database)
+📌 Hosting: Replit
+
+3️⃣ Firebase Database Structure
+The data in Firebase is stored in JSON format like this:
+
+json
+Copy
+Edit
+{
+  "accident_data": {
+    "Maharashtra": { "total_accidents": 15234, "fatal_accidents": 3400 },
+    "Delhi": { "total_accidents": 12000, "fatal_accidents": 2800 },
+    "Tamil Nadu": { "total_accidents": 18050, "fatal_accidents": 4000 }
+  }
+}
+4️⃣ Website Implementation Steps
+✅ Step 1: Set Up Firebase in Replit
+Add Firebase SDK to the project.
+Connect to Firebase Realtime Database.
+Fetch accident data and display it dynamically.
+✅ Step 2: Display Interactive Graphs
+Load the SVG/HTML versions of Plotly graphs.
+Use JavaScript to make them interactive.
+✅ Step 3: Improve UI/UX
+Use Bootstrap or Tailwind CSS for styling.
+Include a search/filter feature for specific states/years.
+5️⃣ Deliverables
+✅ Web-based Information System (hosted on Replit)
+✅ Interactive Graphs (Plotly-based visualizations)
+✅ Firebase Integration (Realtime Data Fetching)
+✅ Well-structured Code (HTML, CSS, JS, Firebase SDK)
+
+6️⃣ Next Steps
+Ask Replit AI to generate the website based on this brief.
+Test Firebase connectivity and ensure data loads properly.
+Embed the Plotly visualizations into the webpage.
+📌 Summary
+This project is a data-driven web application that provides public insights into road traffic accidents through interactive visualizations, using Firebase as a backend and Replit for hosting.
