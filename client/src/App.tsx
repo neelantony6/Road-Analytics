@@ -5,11 +5,10 @@ import { Toaster } from "@/components/ui/toaster";
 import NotFound from "@/pages/not-found";
 import Dashboard from "@/pages/dashboard";
 import SubmitReport from "@/pages/submit-report";
-import { Card } from "./components/ui/card";
 
 function Navigation() {
   return (
-    <nav className="bg-background border-b">
+    <nav className="bg-background border-b sticky top-0 z-50 shadow-sm backdrop-blur-sm bg-background/80">
       <div className="container mx-auto px-4">
         <div className="flex h-16 items-center justify-between">
           <div className="flex items-center">
@@ -17,11 +16,17 @@ function Navigation() {
               Road Safety Analytics
             </h1>
           </div>
-          <div className="flex items-center space-x-6">
-            <a href="/" className="text-foreground hover:text-primary font-medium">
+          <div className="flex items-center space-x-8">
+            <a 
+              href="/" 
+              className="text-foreground/80 hover:text-primary font-medium transition-colors"
+            >
               Dashboard
             </a>
-            <a href="/submit" className="text-foreground hover:text-primary font-medium">
+            <a 
+              href="/submit" 
+              className="bg-primary text-primary-foreground px-4 py-2 rounded-md font-medium hover:bg-primary/90 transition-colors"
+            >
               Submit Report
             </a>
           </div>
@@ -35,7 +40,7 @@ function Router() {
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
-      <main className="py-6">
+      <main className="min-h-[calc(100vh-4rem)] bg-muted/10">
         <Switch>
           <Route path="/" component={Dashboard} />
           <Route path="/submit" component={SubmitReport} />
