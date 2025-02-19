@@ -6,8 +6,9 @@ import StateFilter from "@/components/filters/state-filter";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { firebaseService } from "@/lib/firebase";
-import { AlertCircle, Loader2 } from "lucide-react";
+import { AlertCircle } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import LoadingSpinner from "@/components/ui/loading-spinner";
 
 export default function Dashboard() {
   const [selectedState, setSelectedState] = useState<string | null>(null);
@@ -20,7 +21,7 @@ export default function Dashboard() {
 
   if (error) {
     return (
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-8 animate-in fade-in duration-500">
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Error</AlertTitle>
@@ -40,6 +41,12 @@ export default function Dashboard() {
   if (isLoading) {
     return (
       <div className="container mx-auto px-4 py-8">
+        <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
+          <LoadingSpinner size="lg" />
+          <p className="text-muted-foreground animate-pulse">
+            Loading accident data...
+          </p>
+        </div>
         <div className="animate-pulse space-y-8">
           <div className="h-12 bg-muted rounded w-1/3"></div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -55,7 +62,7 @@ export default function Dashboard() {
 
   if (!accidentData?.accident_data) {
     return (
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-8 animate-in fade-in duration-500">
         <Alert>
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>No Data Available</AlertTitle>
@@ -84,7 +91,7 @@ export default function Dashboard() {
   const fatalityRate = ((totalFatalities / totalAccidents) * 100).toFixed(1);
 
   return (
-    <div className="container mx-auto px-4 py-8 space-y-8">
+    <div className="container mx-auto px-4 py-8 space-y-8 animate-in fade-in duration-500">
       <div className="mb-8">
         <h1 className="text-4xl font-bold mb-3 bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
           Road Safety Analytics Dashboard
