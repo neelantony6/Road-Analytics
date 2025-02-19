@@ -2,7 +2,6 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { InsertTrafficReport, InsertSafetySuggestion, insertTrafficReportSchema, insertSafetySuggestionSchema } from "@shared/schema";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
@@ -10,28 +9,60 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { firebaseService } from "@/lib/firebase";
+import { z } from "zod";
+import { AlertCircle } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+
+// Form validation schemas with enhanced validation
+const trafficReportSchema = z.object({
+  date: z.string()
+    .min(1, "Date is required")
+    .refine((date) => !isNaN(Date.parse(date)), "Invalid date format"),
+  location: z.string()
+    .min(3, "Location must be at least 3 characters")
+    .max(100, "Location must not exceed 100 characters"),
+  severity: z.number()
+    .min(1, "Minimum severity is 1")
+    .max(5, "Maximum severity is 5"),
+  description: z.string()
+    .min(20, "Please provide a more detailed description (at least 20 characters)")
+    .max(500, "Description must not exceed 500 characters"),
+});
+
+const safetySuggestionSchema = z.object({
+  suggestion: z.string()
+    .min(20, "Please provide a more detailed suggestion (at least 20 characters)")
+    .max(500, "Suggestion must not exceed 500 characters"),
+  category: z.enum(["infrastructure", "education", "enforcement"], {
+    errorMap: () => ({ message: "Please select a valid category" }),
+  }),
+});
+
+type TrafficReport = z.infer<typeof trafficReportSchema>;
+type SafetySuggestion = z.infer<typeof safetySuggestionSchema>;
 
 export default function SubmitReport() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [submissionError, setSubmissionError] = useState<string | null>(null);
 
-  const reportForm = useForm<InsertTrafficReport>({
-    resolver: zodResolver(insertTrafficReportSchema),
+  const reportForm = useForm<TrafficReport>({
+    resolver: zodResolver(trafficReportSchema),
     defaultValues: {
       severity: 1,
     },
   });
 
-  const suggestionForm = useForm<InsertSafetySuggestion>({
-    resolver: zodResolver(insertSafetySuggestionSchema),
+  const suggestionForm = useForm<SafetySuggestion>({
+    resolver: zodResolver(safetySuggestionSchema),
   });
 
   const reportMutation = useMutation({
-    mutationFn: async (data: InsertTrafficReport) => {
-      const res = await apiRequest("POST", "/api/reports", data);
-      return res.json();
+    mutationFn: async (data: TrafficReport) => {
+      setSubmissionError(null);
+      return await firebaseService.submitTrafficReport(data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/reports"] });
@@ -42,6 +73,7 @@ export default function SubmitReport() {
       reportForm.reset();
     },
     onError: (error: Error) => {
+      setSubmissionError(error.message);
       toast({
         title: "Submission Failed",
         description: error.message,
@@ -51,9 +83,9 @@ export default function SubmitReport() {
   });
 
   const suggestionMutation = useMutation({
-    mutationFn: async (data: InsertSafetySuggestion) => {
-      const res = await apiRequest("POST", "/api/suggestions", data);
-      return res.json();
+    mutationFn: async (data: SafetySuggestion) => {
+      setSubmissionError(null);
+      return await firebaseService.submitSafetySuggestion(data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/suggestions"] });
@@ -64,6 +96,7 @@ export default function SubmitReport() {
       suggestionForm.reset();
     },
     onError: (error: Error) => {
+      setSubmissionError(error.message);
       toast({
         title: "Submission Failed",
         description: error.message,
@@ -80,6 +113,14 @@ export default function SubmitReport() {
           Help improve road safety by reporting incidents or suggesting safety improvements.
         </p>
       </div>
+
+      {submissionError && (
+        <Alert variant="destructive" className="mb-6">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Error</AlertTitle>
+          <AlertDescription>{submissionError}</AlertDescription>
+        </Alert>
+      )}
 
       <Tabs defaultValue="report" className="space-y-4">
         <TabsList className="grid w-full grid-cols-2">

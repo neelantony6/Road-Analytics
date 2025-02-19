@@ -1,15 +1,32 @@
 import { useMemo } from "react";
 import Plot from "react-plotly.js";
 
+interface AccidentData {
+  total_accidents: number;
+  fatal_accidents: number;
+  yearly_data: {
+    [year: string]: {
+      total: number;
+      fatal: number;
+    };
+  };
+}
+
 interface AccidentTrendsProps {
-  data: Record<string, any>;
+  data: Record<string, AccidentData>;
 }
 
 export default function AccidentTrends({ data }: AccidentTrendsProps) {
   const chartData = useMemo(() => {
-    return Object.entries(data || {}).map(([state, stats]: [string, any]) => ({
+    return Object.entries(data || {}).map(([state, stats]) => ({
       x: [2019, 2020, 2021, 2022, 2023],
-      y: [stats.total_accidents * 0.8, stats.total_accidents * 0.85, stats.total_accidents * 0.9, stats.total_accidents * 0.95, stats.total_accidents],
+      y: [
+        stats.yearly_data["2019"].total,
+        stats.yearly_data["2020"].total,
+        stats.yearly_data["2021"].total,
+        stats.yearly_data["2022"].total,
+        stats.yearly_data["2023"].total
+      ],
       type: 'scatter',
       mode: 'lines+markers',
       name: state

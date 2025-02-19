@@ -1,8 +1,19 @@
 import { useMemo } from "react";
 import Plot from "react-plotly.js";
 
+interface AccidentData {
+  total_accidents: number;
+  fatal_accidents: number;
+  yearly_data: {
+    [year: string]: {
+      total: number;
+      fatal: number;
+    };
+  };
+}
+
 interface StateComparisonProps {
-  data: Record<string, any>;
+  data: Record<string, AccidentData>;
 }
 
 export default function StateComparison({ data }: StateComparisonProps) {

@@ -5,30 +5,78 @@ import StateComparison from "@/components/charts/state-comparison";
 import StateFilter from "@/components/filters/state-filter";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-
-const sampleData = {
-  "Maharashtra": { "total_accidents": 15234, "fatal_accidents": 3400 },
-  "Delhi": { "total_accidents": 12000, "fatal_accidents": 2800 },
-  "Tamil Nadu": { "total_accidents": 18050, "fatal_accidents": 4000 }
-};
+import { firebaseService } from "@/lib/firebase";
+import { AlertCircle, Loader2 } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export default function Dashboard() {
   const [selectedState, setSelectedState] = useState<string | null>(null);
 
-  const { data: reports } = useQuery({
-    queryKey: ["/api/reports"],
+  const { data: accidentData, isLoading, error } = useQuery({
+    queryKey: ["/api/accident-data"],
+    queryFn: firebaseService.getAccidentData,
+    retry: 2
   });
 
-  const filteredData = selectedState
-    ? { [selectedState]: sampleData[selectedState] }
-    : sampleData;
+  if (error) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Error</AlertTitle>
+          <AlertDescription>
+            Failed to load accident data. Please try again later.
+            {process.env.NODE_ENV === 'development' && (
+              <div className="mt-2 text-xs opacity-70">
+                Error: {error.message}
+              </div>
+            )}
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
 
-  const totalAccidents = Object.values(sampleData).reduce(
+  if (isLoading) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="animate-pulse space-y-8">
+          <div className="h-12 bg-muted rounded w-1/3"></div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="h-32 bg-muted rounded"></div>
+            ))}
+          </div>
+          <div className="h-96 bg-muted rounded"></div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!accidentData?.accident_data) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <Alert>
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>No Data Available</AlertTitle>
+          <AlertDescription>
+            No accident data is currently available. Data will be initialized shortly.
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
+
+  const filteredData = selectedState
+    ? { [selectedState]: accidentData.accident_data[selectedState] }
+    : accidentData.accident_data;
+
+  const totalAccidents = Object.values(accidentData.accident_data).reduce(
     (sum: number, state: any) => sum + state.total_accidents,
     0
   );
 
-  const totalFatalities = Object.values(sampleData).reduce(
+  const totalFatalities = Object.values(accidentData.accident_data).reduce(
     (sum: number, state: any) => sum + state.fatal_accidents,
     0
   );
@@ -69,7 +117,7 @@ export default function Dashboard() {
           <h2 className="text-2xl font-semibold mb-4">Accident Trends Analysis</h2>
           <div className="bg-muted/50 p-4 rounded-lg">
             <StateFilter 
-              states={Object.keys(sampleData)}
+              states={Object.keys(accidentData.accident_data)}
               selectedState={selectedState}
               onStateChange={setSelectedState}
             />
