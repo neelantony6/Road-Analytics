@@ -17,14 +17,14 @@ export default function StateFilter({ states, selectedState, onStateChange }: St
     <div className="flex items-center space-x-2">
       <label className="text-sm font-medium">Filter by State:</label>
       <Select
-        value={selectedState || ""}
-        onValueChange={(value) => onStateChange(value || null)}
+        value={selectedState || "all"}
+        onValueChange={(value) => onStateChange(value === "all" ? null : value)}
       >
         <SelectTrigger className="w-[180px]">
           <SelectValue placeholder="All States" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="">All States</SelectItem>
+          <SelectItem value="all">All States</SelectItem>
           {states.map((state) => (
             <SelectItem key={state} value={state}>
               {state}

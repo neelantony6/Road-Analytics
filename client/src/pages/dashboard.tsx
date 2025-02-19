@@ -1,67 +1,30 @@
-import { useQuery } from "@tanstack/react-query";
-import { ref, get } from "firebase/database";
-import { db } from "@/lib/firebase";
 import { Card } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle } from "lucide-react";
 import StatsCard from "@/components/ui/stats-card";
 import AccidentTrends from "@/components/charts/accident-trends";
 import StateComparison from "@/components/charts/state-comparison";
 import StateFilter from "@/components/filters/state-filter";
 import { useState } from "react";
 
+// Sample static data
+const sampleData = {
+  "Maharashtra": { "total_accidents": 15234, "fatal_accidents": 3400 },
+  "Delhi": { "total_accidents": 12000, "fatal_accidents": 2800 },
+  "Tamil Nadu": { "total_accidents": 18050, "fatal_accidents": 4000 }
+};
+
 export default function Dashboard() {
   const [selectedState, setSelectedState] = useState<string | null>(null);
 
-  const { data: accidentData, isLoading, isError, error } = useQuery({
-    queryKey: ['accident_data'],
-    queryFn: async () => {
-      try {
-        const snapshot = await get(ref(db, 'accident_data'));
-        if (!snapshot.exists()) {
-          throw new Error('No data available');
-        }
-        return snapshot.val();
-      } catch (err: any) {
-        console.error('Error fetching data:', err);
-        throw new Error(err.message || 'Failed to fetch accident data');
-      }
-    }
-  });
+  const filteredData = selectedState
+    ? { [selectedState]: sampleData[selectedState] }
+    : sampleData;
 
-  const filteredData = selectedState && accidentData
-    ? { [selectedState]: accidentData[selectedState] }
-    : accidentData;
-
-  if (isLoading) {
-    return (
-      <div className="container mx-auto p-4 space-y-4">
-        <Skeleton className="h-[200px] w-full" />
-        <Skeleton className="h-[400px] w-full" />
-      </div>
-    );
-  }
-
-  if (isError) {
-    return (
-      <div className="container mx-auto p-4">
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            {error instanceof Error ? error.message : 'Failed to load accident data'}
-          </AlertDescription>
-        </Alert>
-      </div>
-    );
-  }
-
-  const totalAccidents = Object.values(accidentData || {}).reduce(
+  const totalAccidents = Object.values(sampleData).reduce(
     (sum: number, state: any) => sum + state.total_accidents,
     0
   );
 
-  const totalFatalities = Object.values(accidentData || {}).reduce(
+  const totalFatalities = Object.values(sampleData).reduce(
     (sum: number, state: any) => sum + state.fatal_accidents,
     0
   );
@@ -86,16 +49,16 @@ export default function Dashboard() {
       <Card className="p-4">
         <div className="mb-4">
           <StateFilter 
-            states={Object.keys(accidentData || {})}
+            states={Object.keys(sampleData)}
             selectedState={selectedState}
             onStateChange={setSelectedState}
           />
         </div>
-        <AccidentTrends data={filteredData || {}} />
+        <AccidentTrends data={filteredData} />
       </Card>
 
       <Card className="p-4">
-        <StateComparison data={filteredData || {}} />
+        <StateComparison data={filteredData} />
       </Card>
     </div>
   );
