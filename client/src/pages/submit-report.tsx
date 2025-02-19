@@ -3,7 +3,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { InsertTrafficReport, InsertSafetySuggestion, insertTrafficReportSchema, insertSafetySuggestionSchema } from "@shared/schema";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -11,9 +11,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function SubmitReport() {
-  const [formType, setFormType] = useState<'report' | 'suggestion'>('report');
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -36,14 +36,14 @@ export default function SubmitReport() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/reports"] });
       toast({
-        title: "Report Submitted",
-        description: "Thank you for your report.",
+        title: "Report Submitted Successfully",
+        description: "Thank you for contributing to road safety.",
       });
       reportForm.reset();
     },
     onError: (error: Error) => {
       toast({
-        title: "Failed to submit report",
+        title: "Submission Failed",
         description: error.message,
         variant: "destructive",
       });
@@ -58,14 +58,14 @@ export default function SubmitReport() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/suggestions"] });
       toast({
-        title: "Suggestion Submitted",
-        description: "Thank you for your suggestion.",
+        title: "Suggestion Submitted Successfully",
+        description: "Thank you for your valuable input.",
       });
       suggestionForm.reset();
     },
     onError: (error: Error) => {
       toast({
-        title: "Failed to submit suggestion",
+        title: "Submission Failed",
         description: error.message,
         variant: "destructive",
       });
@@ -73,161 +73,178 @@ export default function SubmitReport() {
   });
 
   return (
-    <div className="container mx-auto p-4 max-w-2xl">
+    <div className="container mx-auto p-4 max-w-3xl">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold mb-2">Submit Feedback</h1>
+        <h1 className="text-3xl font-bold mb-2">Submit Traffic Safety Information</h1>
         <p className="text-muted-foreground">
-          Help us improve road safety by submitting accident reports or suggestions.
+          Help improve road safety by reporting incidents or suggesting safety improvements.
         </p>
       </div>
 
-      <div className="mb-6">
-        <Select value={formType} onValueChange={(value: 'report' | 'suggestion') => setFormType(value)}>
-          <SelectTrigger>
-            <SelectValue placeholder="Select form type" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="report">Traffic Incident Report</SelectItem>
-            <SelectItem value="suggestion">Safety Suggestion</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
+      <Tabs defaultValue="report" className="space-y-4">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="report">Incident Report</TabsTrigger>
+          <TabsTrigger value="suggestion">Safety Suggestion</TabsTrigger>
+        </TabsList>
 
-      {formType === 'report' ? (
-        <Card>
-          <CardHeader>
-            <CardTitle>Traffic Incident Report</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Form {...reportForm}>
-              <form onSubmit={reportForm.handleSubmit((data) => reportMutation.mutate(data))} className="space-y-4">
-                <FormField
-                  control={reportForm.control}
-                  name="date"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Date of Incident</FormLabel>
-                      <FormControl>
-                        <Input type="date" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={reportForm.control}
-                  name="location"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Location</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Enter location" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={reportForm.control}
-                  name="severity"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Severity (1-5)</FormLabel>
-                      <Select value={field.value.toString()} onValueChange={(value) => field.onChange(parseInt(value))}>
+        <TabsContent value="report">
+          <Card>
+            <CardHeader>
+              <CardTitle>Traffic Incident Report</CardTitle>
+              <CardDescription>
+                Report details about a traffic incident to help identify patterns and improve safety measures.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Form {...reportForm}>
+                <form onSubmit={reportForm.handleSubmit((data) => reportMutation.mutate(data))} className="space-y-4">
+                  <FormField
+                    control={reportForm.control}
+                    name="date"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Date of Incident</FormLabel>
                         <FormControl>
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
+                          <Input type="date" {...field} />
                         </FormControl>
-                        <SelectContent>
-                          {[1, 2, 3, 4, 5].map((level) => (
-                            <SelectItem key={level} value={level.toString()}>
-                              {level} - {level === 1 ? "Minor" : level === 5 ? "Severe" : "Moderate"}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-                <FormField
-                  control={reportForm.control}
-                  name="description"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Description</FormLabel>
-                      <FormControl>
-                        <Textarea placeholder="Describe the incident" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <Button type="submit" disabled={reportMutation.isPending}>
-                  {reportMutation.isPending ? "Submitting..." : "Submit Report"}
-                </Button>
-              </form>
-            </Form>
-          </CardContent>
-        </Card>
-      ) : (
-        <Card>
-          <CardHeader>
-            <CardTitle>Safety Suggestion</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Form {...suggestionForm}>
-              <form onSubmit={suggestionForm.handleSubmit((data) => suggestionMutation.mutate(data))} className="space-y-4">
-                <FormField
-                  control={suggestionForm.control}
-                  name="suggestion"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Your Suggestion</FormLabel>
-                      <FormControl>
-                        <Textarea placeholder="Enter your safety suggestion" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={suggestionForm.control}
-                  name="category"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Category</FormLabel>
-                      <Select value={field.value} onValueChange={field.onChange}>
+                  <FormField
+                    control={reportForm.control}
+                    name="location"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Location</FormLabel>
                         <FormControl>
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
+                          <Input placeholder="Enter precise location" {...field} />
                         </FormControl>
-                        <SelectContent>
-                          <SelectItem value="infrastructure">Infrastructure</SelectItem>
-                          <SelectItem value="education">Education</SelectItem>
-                          <SelectItem value="enforcement">Enforcement</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-                <Button type="submit" disabled={suggestionMutation.isPending}>
-                  {suggestionMutation.isPending ? "Submitting..." : "Submit Suggestion"}
-                </Button>
-              </form>
-            </Form>
-          </CardContent>
-        </Card>
-      )}
+                  <FormField
+                    control={reportForm.control}
+                    name="severity"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Severity Level</FormLabel>
+                        <Select value={field.value.toString()} onValueChange={(value) => field.onChange(parseInt(value))}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {[1, 2, 3, 4, 5].map((level) => (
+                              <SelectItem key={level} value={level.toString()}>
+                                {level} - {
+                                  level === 1 ? "Minor" : 
+                                  level === 2 ? "Moderate" :
+                                  level === 3 ? "Serious" :
+                                  level === 4 ? "Severe" :
+                                  "Critical"
+                                }
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={reportForm.control}
+                    name="description"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Incident Description</FormLabel>
+                        <FormControl>
+                          <Textarea 
+                            placeholder="Provide detailed information about the incident"
+                            className="min-h-[100px]"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <Button type="submit" className="w-full" disabled={reportMutation.isPending}>
+                    {reportMutation.isPending ? "Submitting..." : "Submit Report"}
+                  </Button>
+                </form>
+              </Form>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="suggestion">
+          <Card>
+            <CardHeader>
+              <CardTitle>Safety Suggestion</CardTitle>
+              <CardDescription>
+                Share your ideas on how to improve road safety in your area.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Form {...suggestionForm}>
+                <form onSubmit={suggestionForm.handleSubmit((data) => suggestionMutation.mutate(data))} className="space-y-4">
+                  <FormField
+                    control={suggestionForm.control}
+                    name="suggestion"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Your Suggestion</FormLabel>
+                        <FormControl>
+                          <Textarea 
+                            placeholder="Describe your safety improvement suggestion"
+                            className="min-h-[100px]"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={suggestionForm.control}
+                    name="category"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Category</FormLabel>
+                        <Select value={field.value} onValueChange={field.onChange}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select a category" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="infrastructure">Infrastructure Improvement</SelectItem>
+                            <SelectItem value="education">Public Education & Awareness</SelectItem>
+                            <SelectItem value="enforcement">Law Enforcement & Regulations</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <Button type="submit" className="w-full" disabled={suggestionMutation.isPending}>
+                    {suggestionMutation.isPending ? "Submitting..." : "Submit Suggestion"}
+                  </Button>
+                </form>
+              </Form>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
