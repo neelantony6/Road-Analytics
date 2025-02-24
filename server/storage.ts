@@ -65,9 +65,10 @@ export class DatabaseStorage implements IStorage {
   }
 
   async upvoteSuggestion(id: number): Promise<SafetySuggestion> {
+    // Use SQL expression for incrementing upvotes
     const [updated] = await db
       .update(safetySuggestions)
-      .set({ upvotes: db.raw('upvotes + 1') })
+      .set({ upvotes: db.dynamic.ref(`${safetySuggestions.upvotes.name} + 1`) })
       .where(eq(safetySuggestions.id, id))
       .returning();
     return updated;

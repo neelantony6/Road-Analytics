@@ -5,6 +5,8 @@ import { Toaster } from "@/components/ui/toaster";
 import NotFound from "@/pages/not-found";
 import Dashboard from "@/pages/dashboard";
 import SubmitReport from "@/pages/submit-report";
+import AnalyticsView from "@/pages/analytics";
+import { MapIcon, BarChart3, FileInput } from "lucide-react";
 
 function Navigation() {
   return (
@@ -13,20 +15,29 @@ function Navigation() {
         <div className="flex h-16 items-center justify-between">
           <div className="flex items-center">
             <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
-              Road Safety Analytics
+              Traffic Safety Analytics
             </h1>
           </div>
           <div className="flex items-center space-x-8">
             <a 
               href="/" 
-              className="text-foreground/80 hover:text-primary font-medium transition-colors"
+              className="text-foreground/80 hover:text-primary font-medium transition-colors flex items-center gap-2"
             >
+              <MapIcon className="w-4 h-4" />
               Dashboard
             </a>
             <a 
-              href="/submit" 
-              className="bg-primary text-primary-foreground px-4 py-2 rounded-md font-medium hover:bg-primary/90 transition-colors"
+              href="/analytics" 
+              className="text-foreground/80 hover:text-primary font-medium transition-colors flex items-center gap-2"
             >
+              <BarChart3 className="w-4 h-4" />
+              Analytics
+            </a>
+            <a 
+              href="/submit" 
+              className="bg-primary text-primary-foreground px-4 py-2 rounded-md font-medium hover:bg-primary/90 transition-colors flex items-center gap-2"
+            >
+              <FileInput className="w-4 h-4" />
               Submit Report
             </a>
           </div>
@@ -43,6 +54,7 @@ function Router() {
       <main className="min-h-[calc(100vh-4rem)] bg-muted/10">
         <Switch>
           <Route path="/" component={Dashboard} />
+          <Route path="/analytics" component={AnalyticsView} />
           <Route path="/submit" component={SubmitReport} />
           <Route component={NotFound} />
         </Switch>
