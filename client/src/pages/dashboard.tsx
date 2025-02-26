@@ -92,7 +92,7 @@ export default function Dashboard() {
         <div className="mb-6">
           <h2 className="text-2xl font-semibold mb-4">Accident Trends Analysis</h2>
           <div className="bg-muted/50 p-4 rounded-lg">
-            <AccidentSearch/> {/* Added AccidentSearch component */}
+            <AccidentSearch data={mockData} states={Object.keys(mockData)} />
             <StateFilter 
               states={Object.keys(mockData)}
               selectedState={selectedState}
