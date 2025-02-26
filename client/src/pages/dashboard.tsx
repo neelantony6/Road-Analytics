@@ -80,6 +80,28 @@ export default function Dashboard() {
     retry: 2
   });
 
+  const filteredData = useMemo(() => {
+    if (!accidentData?.accident_data) return [];
+    
+    if (selectedState) {
+      const stateData = accidentData.accident_data[selectedState];
+      return Object.entries(stateData.yearly_data).map(([year, stats]) => ({
+        year: parseInt(year),
+        total: stats.total,
+        fatal: stats.fatal
+      }));
+    }
+    
+    return Object.entries(accidentData.accident_data).flatMap(([state, data]) =>
+      Object.entries(data.yearly_data).map(([year, stats]) => ({
+        year: parseInt(year),
+        state,
+        total: stats.total,
+        fatal: stats.fatal
+      }))
+    );
+  }, [accidentData, selectedState]);
+
   if (error) {
     return (
       <div className="container mx-auto px-4 py-8 animate-in fade-in duration-500">

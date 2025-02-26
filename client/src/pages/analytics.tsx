@@ -60,15 +60,15 @@ export default function AnalyticsView() {
   }
 
   // Transform data for the time series chart
-  const timeSeriesData = Object.entries(accidentData.accident_data).map(([state, data]: [string, any]) => {
-    const yearlyData = Object.entries(data.yearly_data).map(([year, stats]: [string, any]) => ({
-      year,
-      total: stats.total,
-      fatal: stats.fatal,
-      state
-    }));
-    return yearlyData;
-  }).flat();
+  const timeSeriesData = accidentData?.accident_data ? 
+    Object.entries(accidentData.accident_data).flatMap(([state, data]) =>
+      Object.entries(data.yearly_data).map(([year, stats]) => ({
+        year: parseInt(year),
+        total: stats.total,
+        fatal: stats.fatal,
+        state
+      }))
+    ) : [];
 
   return (
     <div className="container mx-auto px-4 py-8 space-y-8 animate-in fade-in duration-500">
