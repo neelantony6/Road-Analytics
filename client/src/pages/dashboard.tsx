@@ -4,6 +4,7 @@ import StateFilter from "@/components/filters/state-filter";
 // Assuming AccidentTrends and StateComparison components exist and have appropriate props
 import AccidentTrends from "@/components/charts/accident-trends";
 import StateComparison from "@/components/charts/state-comparison";
+import AccidentSearch from "@/components/search/accident-search"; // Added import
 
 const mockData = {
   "California": {
@@ -91,6 +92,7 @@ export default function Dashboard() {
         <div className="mb-6">
           <h2 className="text-2xl font-semibold mb-4">Accident Trends Analysis</h2>
           <div className="bg-muted/50 p-4 rounded-lg">
+            <AccidentSearch/> {/* Added AccidentSearch component */}
             <StateFilter 
               states={Object.keys(mockData)}
               selectedState={selectedState}
