@@ -1,6 +1,7 @@
 import { Card } from "@/components/ui/card";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import StateFilter from "@/components/filters/state-filter";
+// Assuming AccidentTrends and StateComparison components exist and have appropriate props
 import AccidentTrends from "@/components/charts/accident-trends";
 import StateComparison from "@/components/charts/state-comparison";
 
@@ -25,6 +26,13 @@ const mockData = {
   }
 };
 
+const mockAccidentTrendsData = {
+  labels: ['2019', '2020', '2021', '2022'],
+  total: [1200, 1100, 900, 950],
+  fatal: [120, 100, 85, 90]
+};
+
+
 export default function Dashboard() {
   const [selectedState, setSelectedState] = useState<string | null>(null);
 
@@ -41,6 +49,17 @@ export default function Dashboard() {
     (sum, state) => sum + state.fatal_accidents,
     0
   );
+
+  const preparedAccidentTrendsData = useMemo(() => ({
+    yearly_data: mockAccidentTrendsData.labels.reduce((acc, year, i) => ({
+      ...acc,
+      [year]: {
+        total: mockAccidentTrendsData.total[i],
+        fatal: mockAccidentTrendsData.fatal[i]
+      }
+    }), {})
+  }), []);
+
 
   return (
     <div className="container mx-auto px-4 py-8 space-y-8 animate-in fade-in duration-500">
@@ -79,7 +98,7 @@ export default function Dashboard() {
             />
           </div>
         </div>
-        <AccidentTrends data={filteredData} />
+        <AccidentTrends data={preparedAccidentTrendsData} /> {/* Use prepared mock data */}
       </Card>
 
       <Card className="p-8 shadow-lg hover:shadow-xl transition-shadow">
