@@ -10,6 +10,67 @@ import { AlertCircle } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import LoadingSpinner from "@/components/ui/loading-spinner";
 
+function AccidentSearch({ data, states }: { data: any; states: string[] }) {
+  const [selectedState, setSelectedState] = useState<string | null>(null);
+  const [selectedYear, setSelectedYear] = useState<number | null>(null);
+  const [searchResults, setSearchResults] = useState<any | null>(null);
+
+  const handleSearch = () => {
+    if (selectedState && selectedYear && data[selectedState]) {
+      const yearData = data[selectedState].years.find((year: any) => year.year === selectedYear);
+      setSearchResults(yearData);
+    } else {
+      setSearchResults(null);
+    }
+  };
+
+  return (
+    <div>
+      <div className="mb-4">
+        <label htmlFor="state" className="block text-sm font-medium text-gray-700">
+          State:
+        </label>
+        <select
+          id="state"
+          value={selectedState || ""}
+          onChange={(e) => setSelectedState(e.target.value)}
+          className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+        >
+          <option value="">Select State</option>
+          {states.map((state) => (
+            <option key={state} value={state}>
+              {state}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div className="mb-4">
+        <label htmlFor="year" className="block text-sm font-medium text-gray-700">
+          Year:
+        </label>
+        <input
+          type="number"
+          id="year"
+          value={selectedYear || ""}
+          onChange={(e) => setSelectedYear(parseInt(e.target.value, 10))}
+          className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+        />
+      </div>
+      <button onClick={handleSearch} className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+        Search
+      </button>
+      {searchResults ? (
+        <div className="mt-4">
+          <p>Total Accidents: {searchResults.total_accidents}</p>
+          <p>Fatal Accidents: {searchResults.fatal_accidents}</p>
+          {/* Add other relevant data here */}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+
 export default function Dashboard() {
   const [selectedState, setSelectedState] = useState<string | null>(null);
 
@@ -118,6 +179,11 @@ export default function Dashboard() {
           description="Percentage of accidents resulting in fatalities"
         />
       </div>
+
+      <AccidentSearch 
+        data={accidentData.accident_data} 
+        states={Object.keys(accidentData.accident_data)} 
+      />
 
       <Card className="p-8 shadow-lg hover:shadow-xl transition-shadow">
         <div className="mb-6">
