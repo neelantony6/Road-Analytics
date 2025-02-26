@@ -1,43 +1,42 @@
+
 import { useMemo } from "react";
 import Plot from "react-plotly.js";
 import { useMediaQuery } from "@/hooks/use-media-query";
 
-interface AccidentData {
-  total_accidents: number;
-  fatal_accidents: number;
-  yearly_data: {
-    [year: string]: {
-      total: number;
-      fatal: number;
-    };
-  };
-}
-
 interface AccidentTrendsProps {
-  data: Record<string, AccidentData>;
+  data: {
+    yearly_data: {
+      [year: string]: {
+        total: number;
+        fatal: number;
+      }
+    }
+  };
 }
 
 export default function AccidentTrends({ data }: AccidentTrendsProps) {
   const isMobile = useMediaQuery("(max-width: 768px)");
 
   const chartData = useMemo(() => {
-    return Object.entries(data || {}).map(([state, stats]) => ({
-      x: [2019, 2020, 2021, 2022, 2023],
-      y: [
-        stats.yearly_data["2019"].total,
-        stats.yearly_data["2020"].total,
-        stats.yearly_data["2021"].total,
-        stats.yearly_data["2022"].total,
-        stats.yearly_data["2023"].total
-      ],
-      type: 'scatter',
-      mode: 'lines+markers',
-      name: state,
-      hovertemplate: `<b>${state}</b><br>` +
-        'Year: %{x}<br>' +
-        'Accidents: %{y}<br>' +
-        '<extra></extra>'
-    }));
+    const years = Object.keys(data.yearly_data);
+    return [
+      {
+        x: years,
+        y: years.map(year => data.yearly_data[year].total),
+        type: 'scatter',
+        mode: 'lines+markers',
+        name: 'Total Accidents',
+        hovertemplate: 'Year: %{x}<br>Total Accidents: %{y}<extra></extra>'
+      },
+      {
+        x: years,
+        y: years.map(year => data.yearly_data[year].fatal),
+        type: 'scatter',
+        mode: 'lines+markers',
+        name: 'Fatal Accidents',
+        hovertemplate: 'Year: %{x}<br>Fatal Accidents: %{y}<extra></extra>'
+      }
+    ];
   }, [data]);
 
   return (
@@ -53,11 +52,11 @@ export default function AccidentTrends({ data }: AccidentTrendsProps) {
             : { l: 50, r: 50, t: 30, b: 50 },
           xaxis: { 
             title: 'Year',
-            fixedrange: isMobile // Disable zoom on x-axis for mobile
+            fixedrange: isMobile
           },
           yaxis: { 
             title: 'Number of Accidents',
-            fixedrange: isMobile // Disable zoom on y-axis for mobile
+            fixedrange: isMobile
           },
           showlegend: true,
           legend: isMobile ? {
@@ -66,12 +65,12 @@ export default function AccidentTrends({ data }: AccidentTrendsProps) {
             x: 0.5,
             xanchor: 'center'
           } : undefined,
-          dragmode: isMobile ? false : 'zoom', // Disable drag to zoom on mobile
+          dragmode: isMobile ? false : 'zoom',
           hovermode: 'closest'
         }}
         config={{
           responsive: true,
-          displayModeBar: !isMobile, // Hide mode bar on mobile
+          displayModeBar: !isMobile,
           modeBarButtonsToRemove: ['lasso2d', 'select2d'],
           displaylogo: false
         }}
