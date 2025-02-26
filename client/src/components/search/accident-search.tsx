@@ -25,7 +25,11 @@ export default function AccidentSearch({ data, states }: AccidentSearchProps) {
           total: yearData.total,
           fatal: yearData.fatal
         });
+      } else {
+        console.log('No data found for selected year');
       }
+    } else {
+      console.log('Please select both state and year');
     }
   };
 
