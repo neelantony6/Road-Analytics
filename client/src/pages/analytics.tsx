@@ -1,75 +1,13 @@
 import { Card } from "@/components/ui/card";
-import { useQuery } from "@tanstack/react-query";
-import { firebaseService } from "@/lib/firebase";
-import { AlertCircle } from "lucide-react";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import LoadingSpinner from "@/components/ui/loading-spinner";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
+const mockTimeSeriesData = [
+  { year: 2019, total: 7800, fatal: 280 },
+  { year: 2020, total: 7200, fatal: 265 },
+  { year: 2021, total: 8500, fatal: 305 }
+];
+
 export default function AnalyticsView() {
-  const { data: accidentData, isLoading, error } = useQuery({
-    queryKey: ["/api/accident-data"],
-    queryFn: firebaseService.getAccidentData,
-    retry: 2
-  });
-
-  if (error) {
-    return (
-      <div className="container mx-auto px-4 py-8 animate-in fade-in duration-500">
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Error</AlertTitle>
-          <AlertDescription>
-            Failed to load analytics data. Please try again later.
-            {process.env.NODE_ENV === 'development' && (
-              <div className="mt-2 text-xs opacity-70">
-                Error: {error.message}
-              </div>
-            )}
-          </AlertDescription>
-        </Alert>
-      </div>
-    );
-  }
-
-  if (isLoading) {
-    return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
-          <LoadingSpinner size="lg" />
-          <p className="text-muted-foreground animate-pulse">
-            Loading analytics data...
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!accidentData?.accident_data) {
-    return (
-      <div className="container mx-auto px-4 py-8 animate-in fade-in duration-500">
-        <Alert>
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>No Data Available</AlertTitle>
-          <AlertDescription>
-            No analytics data is currently available.
-          </AlertDescription>
-        </Alert>
-      </div>
-    );
-  }
-
-  // Transform data for the time series chart
-  const timeSeriesData = accidentData?.accident_data ? 
-    Object.entries(accidentData.accident_data).flatMap(([state, data]) =>
-      Object.entries(data.yearly_data).map(([year, stats]) => ({
-        year: parseInt(year),
-        total: stats.total,
-        fatal: stats.fatal,
-        state
-      }))
-    ) : [];
-
   return (
     <div className="container mx-auto px-4 py-8 space-y-8 animate-in fade-in duration-500">
       <div className="mb-8">
@@ -85,15 +23,7 @@ export default function AnalyticsView() {
         <h2 className="text-2xl font-semibold mb-6">Accident Trends Over Time</h2>
         <div className="h-[400px]">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart
-              data={timeSeriesData}
-              margin={{
-                top: 5,
-                right: 30,
-                left: 20,
-                bottom: 5,
-              }}
-            >
+            <LineChart data={mockTimeSeriesData}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="year" />
               <YAxis />
@@ -105,7 +35,6 @@ export default function AnalyticsView() {
           </ResponsiveContainer>
         </div>
       </Card>
-
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Card className="p-6">
           <h3 className="text-xl font-semibold mb-4">Key Findings</h3>
