@@ -4,7 +4,7 @@ import AccidentTrends from "@/components/charts/accident-trends";
 import StateComparison from "@/components/charts/state-comparison";
 import StateFilter from "@/components/filters/state-filter";
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { firebaseService } from "@/lib/firebase";
 import { AlertCircle } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -82,24 +82,12 @@ export default function Dashboard() {
 
   const filteredData = useMemo(() => {
     if (!accidentData?.accident_data) return [];
-    
+
     if (selectedState) {
-      const stateData = accidentData.accident_data[selectedState];
-      return Object.entries(stateData.yearly_data).map(([year, stats]) => ({
-        year: parseInt(year),
-        total: stats.total,
-        fatal: stats.fatal
-      }));
+      return { [selectedState]: accidentData.accident_data[selectedState] };
     }
-    
-    return Object.entries(accidentData.accident_data).flatMap(([state, data]) =>
-      Object.entries(data.yearly_data).map(([year, stats]) => ({
-        year: parseInt(year),
-        state,
-        total: stats.total,
-        fatal: stats.fatal
-      }))
-    );
+
+    return accidentData.accident_data;
   }, [accidentData, selectedState]);
 
   if (error) {
@@ -156,10 +144,6 @@ export default function Dashboard() {
       </div>
     );
   }
-
-  const filteredData = selectedState
-    ? { [selectedState]: accidentData.accident_data[selectedState] }
-    : accidentData.accident_data;
 
   const totalAccidents = Object.values(accidentData.accident_data).reduce(
     (sum: number, state: any) => sum + state.total_accidents,
