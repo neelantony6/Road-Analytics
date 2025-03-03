@@ -110,3 +110,41 @@ export default function Dashboard() {
     </div>
   );
 }
+import React from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+
+export default function DashboardView() {
+  return (
+    <div className="container mx-auto p-4 space-y-6">
+      <h1 className="text-2xl font-bold mb-6">Traffic Safety Dashboard</h1>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <Card className="col-span-1 md:col-span-2">
+          <CardHeader>
+            <CardTitle>Road Accident Overview</CardTitle>
+          </CardHeader>
+          <CardContent className="h-[400px]">
+            <iframe 
+              src="/road_accident_trends.html" 
+              className="w-full h-full border-0" 
+              title="Road Accident Trends"
+            />
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader>
+            <CardTitle>State-wise Analysis</CardTitle>
+          </CardHeader>
+          <CardContent className="h-[400px]">
+            <iframe 
+              src="/top_states_accidents_2019.html" 
+              className="w-full h-full border-0" 
+              title="Top States by Accidents"
+            />
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}
