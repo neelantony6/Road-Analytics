@@ -1,6 +1,6 @@
-
 import { Card } from "@/components/ui/card";
-import { ResponsiveContainer, LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip, Legend } from 'recharts';
+import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from "recharts";
+import RoadAccidentGraph from "@/components/charts/road-accident-graph";
 
 const mockData = {
   yearly_data: {
@@ -16,6 +16,12 @@ export default function AnalyticsView() {
     total: stats.total,
     fatal: stats.fatal
   }));
+
+  // Prepare data for road accident graph
+  const roadAccidentData = {
+    years: ["2016", "2017", "2018", "2019", "2020", "2021"],
+    accidents: [45000, 47500, 49200, 50100, 46800, 48500]
+  };
 
   return (
     <div className="container mx-auto px-4 py-8 space-y-8 animate-in fade-in duration-500">
@@ -43,6 +49,10 @@ export default function AnalyticsView() {
             </LineChart>
           </ResponsiveContainer>
         </div>
+      </Card>
+
+      <Card className="p-8 shadow-lg hover:shadow-xl transition-shadow">
+        <RoadAccidentGraph data={roadAccidentData} />
       </Card>
 
       <div className="grid gap-6 md:grid-cols-2">
