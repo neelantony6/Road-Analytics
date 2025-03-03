@@ -1,10 +1,10 @@
-import { Card } from "@/components/ui/card";
 import { useState, useMemo } from "react";
 import StateFilter from "@/components/filters/state-filter";
 // Assuming AccidentTrends and StateComparison components exist and have appropriate props
 import AccidentTrends from "@/components/charts/accident-trends";
 import StateComparison from "@/components/charts/state-comparison";
 import AccidentSearch from "@/components/search/accident-search"; // Added import
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 const mockData = {
   "California": {
@@ -110,41 +110,48 @@ export default function Dashboard() {
     </div>
   );
 }
-import React from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function DashboardView() {
   return (
-    <div className="container mx-auto p-4 space-y-6">
+    <div className="container mx-auto p-4">
       <h1 className="text-2xl font-bold mb-6">Traffic Safety Dashboard</h1>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card className="col-span-1 md:col-span-2">
-          <CardHeader>
-            <CardTitle>Road Accident Overview</CardTitle>
-          </CardHeader>
-          <CardContent className="h-[400px]">
-            <iframe 
-              src="/road_accident_trends.html" 
-              className="w-full h-full border-0" 
-              title="Road Accident Trends"
-            />
-          </CardContent>
-        </Card>
-        
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mb-6">
         <Card>
           <CardHeader>
-            <CardTitle>State-wise Analysis</CardTitle>
+            <CardTitle>Total Accidents</CardTitle>
           </CardHeader>
-          <CardContent className="h-[400px]">
-            <iframe 
-              src="/top_states_accidents_2019.html" 
-              className="w-full h-full border-0" 
-              title="Top States by Accidents"
-            />
+          <CardContent>
+            <p className="text-3xl font-bold">23,500</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Fatal Accidents</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-3xl font-bold">850</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>States Reporting</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-3xl font-bold">50</p>
           </CardContent>
         </Card>
       </div>
+
+      <div className="mb-6">
+        <StateFilter />
+      </div>
+
+      <div className="grid gap-6 md:grid-cols-2 mb-6">
+        <AccidentTrends />
+        <StateComparison />
+      </div>
+
+      <AccidentSearch />
     </div>
   );
 }
