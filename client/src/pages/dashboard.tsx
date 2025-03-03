@@ -1,31 +1,9 @@
 import { useState, useMemo } from "react";
-import StateFilter from "@/components/filters/state-filter";
-// Assuming AccidentTrends and StateComparison components exist and have appropriate props
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import StateFilter from "@/components/state-filter";
 import AccidentTrends from "@/components/charts/accident-trends";
 import StateComparison from "@/components/charts/state-comparison";
-import AccidentSearch from "@/components/search/accident-search"; // Added import
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-
-const mockData = {
-  "California": {
-    total_accidents: 12500,
-    fatal_accidents: 450,
-    yearly_data: {
-      "2019": { total: 4200, fatal: 150 },
-      "2020": { total: 3800, fatal: 140 },
-      "2021": { total: 4500, fatal: 160 }
-    }
-  },
-  "Texas": {
-    total_accidents: 11000,
-    fatal_accidents: 400,
-    yearly_data: {
-      "2019": { total: 3600, fatal: 130 },
-      "2020": { total: 3400, fatal: 125 },
-      "2021": { total: 4000, fatal: 145 }
-    }
-  }
-};
+import AccidentSearch from "@/components/accident-search";
 
 const mockAccidentTrendsData = {
   labels: ['2019', '2020', '2021', '2022'],
@@ -33,6 +11,13 @@ const mockAccidentTrendsData = {
   fatal: [120, 100, 85, 90]
 };
 
+// Mock data for the dashboard
+const mockData = {
+  California: { total_accidents: 4200, fatal_accidents: 320 },
+  Texas: { total_accidents: 3800, fatal_accidents: 290 },
+  Florida: { total_accidents: 3100, fatal_accidents: 240 },
+  // Add more states as needed
+};
 
 export default function Dashboard() {
   const [selectedState, setSelectedState] = useState<string | null>(null);
@@ -61,9 +46,8 @@ export default function Dashboard() {
     }), {})
   }), []);
 
-
   return (
-    <div className="container mx-auto px-4 py-8 space-y-8 animate-in fade-in duration-500">
+    <div className="container mx-auto p-4">
       <div className="mb-8">
         <h1 className="text-4xl font-bold mb-3 bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
           Traffic Safety Dashboard
@@ -73,55 +57,13 @@ export default function Dashboard() {
         </p>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-3">
-        <Card className="p-6">
-          <h3 className="text-lg font-medium">Total States</h3>
-          <p className="text-3xl font-bold">{Object.keys(mockData).length}</p>
-        </Card>
-        <Card className="p-6">
-          <h3 className="text-lg font-medium">Total Accidents</h3>
-          <p className="text-3xl font-bold">{totalAccidents}</p>
-        </Card>
-        <Card className="p-6">
-          <h3 className="text-lg font-medium">Fatal Accidents</h3>
-          <p className="text-3xl font-bold">{totalFatalities}</p>
-        </Card>
-      </div>
-
-      <Card className="p-8 shadow-lg hover:shadow-xl transition-shadow">
-        <div className="mb-6">
-          <h2 className="text-2xl font-semibold mb-4">Accident Trends Analysis</h2>
-          <div className="bg-muted/50 p-4 rounded-lg">
-            <AccidentSearch data={mockData} states={Object.keys(mockData)} />
-            <StateFilter 
-              states={Object.keys(mockData)}
-              selectedState={selectedState}
-              onStateChange={setSelectedState}
-            />
-          </div>
-        </div>
-        <AccidentTrends data={preparedAccidentTrendsData} /> {/* Use prepared mock data */}
-      </Card>
-
-      <Card className="p-8 shadow-lg hover:shadow-xl transition-shadow">
-        <h2 className="text-2xl font-semibold mb-6">State-wise Comparison</h2>
-        <StateComparison data={filteredData} />
-      </Card>
-    </div>
-  );
-}
-
-export default function DashboardView() {
-  return (
-    <div className="container mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-6">Traffic Safety Dashboard</h1>
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mb-6">
         <Card>
           <CardHeader>
             <CardTitle>Total Accidents</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-bold">23,500</p>
+            <p className="text-3xl font-bold">{totalAccidents.toLocaleString()}</p>
           </CardContent>
         </Card>
         <Card>
@@ -129,7 +71,7 @@ export default function DashboardView() {
             <CardTitle>Fatal Accidents</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-bold">850</p>
+            <p className="text-3xl font-bold">{totalFatalities.toLocaleString()}</p>
           </CardContent>
         </Card>
         <Card>
@@ -137,7 +79,7 @@ export default function DashboardView() {
             <CardTitle>States Reporting</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-bold">50</p>
+            <p className="text-3xl font-bold">{Object.keys(mockData).length}</p>
           </CardContent>
         </Card>
       </div>
