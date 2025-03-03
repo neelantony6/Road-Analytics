@@ -1,0 +1,120 @@
+Since you're working on a web-based information system using **Replit** and **Firebase**, you can make your graph interactive using **Chart.js** or **Plotly.js**. Here’s how to upload and display your graph interactively on your website:
+
+---
+
+### **1. Use Chart.js (Simple & Lightweight)**
+If you’re using **Chart.js**, follow these steps:
+
+#### **Step 1: Add Chart.js to Your Website**
+In your HTML file, add this inside `<head>`:
+
+```html
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+```
+
+#### **Step 2: Create a Canvas for the Graph**
+Inside your `<body>`, add this:
+
+```html
+<canvas id="myChart"></canvas>
+```
+
+#### **Step 3: Add JavaScript to Render the Chart**
+Now, in your JavaScript file (`script.js`), add:
+
+```javascript
+const ctx = document.getElementById('myChart').getContext('2d');
+
+const data = {
+    labels: ['January', 'February', 'March', 'April', 'May'],
+    datasets: [{
+        label: 'Accidents per Month',
+        data: [50, 40, 75, 90, 60],
+        backgroundColor: 'rgba(54, 162, 235, 0.5)',
+        borderColor: 'rgba(54, 162, 235, 1)',
+        borderWidth: 2
+    }]
+};
+
+const myChart = new Chart(ctx, {
+    type: 'line',  // Change to 'bar', 'pie', etc., if needed
+    data: data,
+    options: {
+        responsive: true,
+        plugins: {
+            legend: { position: 'top' }
+        }
+    }
+});
+```
+
+---
+
+### **2. Use Plotly.js (More Interactive)**
+If you want zooming, tooltips, and better interactivity, use **Plotly.js**.
+
+#### **Step 1: Include Plotly in Your HTML**
+Add this inside `<head>`:
+
+```html
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+```
+
+#### **Step 2: Add a Div for the Graph**
+Inside `<body>`, add:
+
+```html
+<div id="graph"></div>
+```
+
+#### **Step 3: Add JavaScript to Render the Graph**
+In your JavaScript file (`script.js`):
+
+```javascript
+const data = [{
+    x: ['January', 'February', 'March', 'April', 'May'],
+    y: [50, 40, 75, 90, 60],
+    type: 'scatter',  // Change to 'bar', 'pie', etc., if needed
+    mode: 'lines+markers',
+    marker: {color: 'blue'}
+}];
+
+const layout = {
+    title: 'Road Accidents Data',
+    xaxis: { title: 'Month' },
+    yaxis: { title: 'Number of Accidents' }
+};
+
+Plotly.newPlot('graph', data, layout);
+```
+
+---
+
+### **3. Upload Data from Firebase (If Needed)**
+If your graph data is in Firebase Realtime Database, modify the JavaScript:
+
+```javascript
+fetch('https://your-firebase-database.firebaseio.com/accidents.json')
+  .then(response => response.json())
+  .then(data => {
+    const months = Object.keys(data);
+    const accidentNumbers = Object.values(data);
+
+    Plotly.newPlot('graph', [{
+        x: months,
+        y: accidentNumbers,
+        type: 'scatter',
+        mode: 'lines+markers',
+        marker: { color: 'red' }
+    }]);
+  });
+```
+
+---
+
+### **Final Steps**
+1. **Test on Replit** – If you're using **Replit**, just add this code to your project.
+2. **Deploy** – If your site is hosted on **GitHub Pages, Firebase Hosting, or Replit**, just update your files.
+3. **Make Sure Data Updates Automatically** – If using Firebase, set up a **listener** to update graphs dynamically.
+
+Would you like help with Firebase integration? 🚀
