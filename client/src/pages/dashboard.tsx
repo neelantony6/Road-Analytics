@@ -2,49 +2,57 @@ import { useState, useMemo } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import StateFilter from "@/components/state-filter";
 import AccidentTrends from "@/components/charts/accident-trends";
-import StateComparison from "@/components/charts/state-comparison";
+import RoadAccidentGraph from "@/components/charts/road-accident-graph";
 import AccidentSearch from "@/components/search/accident-search";
 
-const mockAccidentTrendsData = {
-  labels: ['2019', '2020', '2021', '2022'],
-  total: [1200, 1100, 900, 950],
-  fatal: [120, 100, 85, 90]
+// Mock data matching the Python script's structure
+const mockData = {
+  yearly_data: {
+    "Tamil Nadu": {
+      "2016": 71431,
+      "2017": 65562,
+      "2018": 63920,
+      "2019": 57228
+    },
+    "Madhya Pradesh": {
+      "2016": 53972,
+      "2017": 53399,
+      "2018": 51397,
+      "2019": 50669
+    },
+    "Karnataka": {
+      "2016": 44403,
+      "2017": 42542,
+      "2018": 41707,
+      "2019": 40658
+    }
+    // Add more states as needed
+  }
 };
 
-// Mock data for the dashboard
-const mockData = {
-  California: { total_accidents: 4200, fatal_accidents: 320 },
-  Texas: { total_accidents: 3800, fatal_accidents: 290 },
-  Florida: { total_accidents: 3100, fatal_accidents: 240 },
-  // Add more states as needed
+// Prepare data for the bar chart
+const top2019Data = {
+  stateUT: Object.keys(mockData.yearly_data),
+  accidents2019: Object.values(mockData.yearly_data).map(data => data["2019"])
 };
 
 export default function Dashboard() {
   const [selectedState, setSelectedState] = useState<string | null>(null);
 
-  const filteredData = selectedState
-    ? { [selectedState]: mockData[selectedState] }
-    : mockData;
-
-  const totalAccidents = Object.values(mockData).reduce(
-    (sum, state) => sum + state.total_accidents,
-    0
-  );
-
-  const totalFatalities = Object.values(mockData).reduce(
-    (sum, state) => sum + state.fatal_accidents,
-    0
-  );
-
-  const preparedAccidentTrendsData = useMemo(() => ({
-    yearly_data: mockAccidentTrendsData.labels.reduce((acc, year, i) => ({
-      ...acc,
-      [year]: {
-        total: mockAccidentTrendsData.total[i],
-        fatal: mockAccidentTrendsData.fatal[i]
+  const filteredData = useMemo(() => {
+    if (!selectedState) return mockData;
+    return {
+      yearly_data: {
+        [selectedState]: mockData.yearly_data[selectedState]
       }
-    }), {})
-  }), []);
+    };
+  }, [selectedState]);
+
+  // Calculate totals for the statistics cards
+  const totalAccidents2019 = Object.values(mockData.yearly_data)
+    .reduce((sum, state) => sum + state["2019"], 0);
+
+  const averageAccidents = Math.round(totalAccidents2019 / Object.keys(mockData.yearly_data).length);
 
   return (
     <div className="container mx-auto p-4">
@@ -53,25 +61,25 @@ export default function Dashboard() {
           Traffic Safety Dashboard
         </h1>
         <p className="text-lg text-muted-foreground">
-          Overview of traffic accident statistics and trends
+          Overview of road accident statistics and trends across Indian states
         </p>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mb-6">
         <Card>
           <CardHeader>
-            <CardTitle>Total Accidents</CardTitle>
+            <CardTitle>Total Accidents (2019)</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-bold">{totalAccidents.toLocaleString()}</p>
+            <p className="text-3xl font-bold">{totalAccidents2019.toLocaleString()}</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle>Fatal Accidents</CardTitle>
+            <CardTitle>Average by State</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-bold">{totalFatalities.toLocaleString()}</p>
+            <p className="text-3xl font-bold">{averageAccidents.toLocaleString()}</p>
           </CardContent>
         </Card>
         <Card>
@@ -79,25 +87,29 @@ export default function Dashboard() {
             <CardTitle>States Reporting</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-bold">{Object.keys(mockData).length}</p>
+            <p className="text-3xl font-bold">{Object.keys(mockData.yearly_data).length}</p>
           </CardContent>
         </Card>
       </div>
 
       <div className="mb-6">
         <StateFilter 
-          states={Object.keys(mockData)} 
+          states={Object.keys(mockData.yearly_data)} 
           selectedState={selectedState} 
           onStateChange={setSelectedState} 
         />
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 mb-6">
-        <AccidentTrends data={preparedAccidentTrendsData} />
-        <StateComparison data={filteredData} />
+        <Card className="p-4">
+          <AccidentTrends data={filteredData} />
+        </Card>
+        <Card className="p-4">
+          <RoadAccidentGraph data={top2019Data} />
+        </Card>
       </div>
 
-      <AccidentSearch data={mockData} states={Object.keys(mockData)} />
+      <AccidentSearch data={mockData.yearly_data} states={Object.keys(mockData.yearly_data)} />
     </div>
   );
 }
