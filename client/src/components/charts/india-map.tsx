@@ -39,7 +39,10 @@ const IndiaMap: React.FC<IndiaMapProps> = ({ data, selectedYear }) => {
   }, [data, selectedYear, theme]);
 
   const getStateAccidents = (stateName: string) => {
-    const stateData = data.yearly_data[stateName];
+    // Try to match state names with different formats
+    const stateData = data.yearly_data[stateName] || 
+                     data.yearly_data[stateName.toUpperCase()] ||
+                     data.yearly_data[stateName.toLowerCase()];
     return stateData ? stateData[selectedYear] : 0;
   };
 
@@ -51,6 +54,7 @@ const IndiaMap: React.FC<IndiaMapProps> = ({ data, selectedYear }) => {
           scale: 1000,
           center: [78.9629, 22.5937] // Centered on India
         }}
+        className="w-full h-full"
       >
         <ZoomableGroup>
           <Geographies geography={INDIA_TOPO_JSON}>
@@ -71,7 +75,8 @@ const IndiaMap: React.FC<IndiaMapProps> = ({ data, selectedYear }) => {
                       },
                       hover: {
                         fill: theme === "dark" ? "#60a5fa" : "#3b82f6",
-                        outline: "none"
+                        outline: "none",
+                        cursor: "pointer"
                       }
                     }}
                     className="transition-colors duration-200"
