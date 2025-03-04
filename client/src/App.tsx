@@ -6,9 +6,13 @@ import NotFound from "@/pages/not-found";
 import Dashboard from "@/pages/dashboard";
 import SubmitReport from "@/pages/submit-report";
 import AnalyticsView from "@/pages/analytics";
-import { MapIcon, BarChart3, FileInput } from "lucide-react";
+import { MapIcon, BarChart3, FileInput, Moon, Sun } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useTheme } from "@/hooks/use-theme";
 
 function Navigation() {
+  const { theme, setTheme } = useTheme();
+
   return (
     <nav className="bg-background border-b sticky top-0 z-50 shadow-sm backdrop-blur-sm bg-background/80">
       <div className="container mx-auto px-4">
@@ -40,6 +44,17 @@ function Navigation() {
               <FileInput className="w-4 h-4" />
               Submit Report
             </a>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+            >
+              {theme === "dark" ? (
+                <Sun className="h-5 w-5" />
+              ) : (
+                <Moon className="h-5 w-5" />
+              )}
+            </Button>
           </div>
         </div>
       </div>

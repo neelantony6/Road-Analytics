@@ -4,6 +4,7 @@ import StateFilter from "@/components/state-filter";
 import AccidentTrends from "@/components/charts/accident-trends";
 import RoadAccidentGraph from "@/components/charts/road-accident-graph";
 import AccidentSearch from "@/components/search/accident-search";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 // Complete data from the CSV file
 const mockData = {
@@ -101,18 +102,10 @@ const mockData = {
   }
 };
 
-// Sort states by 2019 accidents for the bar chart
-const sortedStates = Object.entries(mockData.yearly_data)
-  .sort(([, a], [, b]) => b["2019"] - a["2019"])
-  .map(([state]) => state);
-
-const top2019Data = {
-  stateUT: sortedStates,
-  accidents2019: sortedStates.map(state => mockData.yearly_data[state]["2019"])
-};
-
 export default function Dashboard() {
   const [selectedState, setSelectedState] = useState<string | null>(null);
+  const [selectedYear, setSelectedYear] = useState("2019");
+  const years = ["2016", "2017", "2018", "2019"];
 
   const filteredData = useMemo(() => {
     if (!selectedState) return mockData;
@@ -123,11 +116,25 @@ export default function Dashboard() {
     };
   }, [selectedState]);
 
-  // Calculate totals for the statistics cards
-  const totalAccidents2019 = Object.values(mockData.yearly_data)
-    .reduce((sum, state) => sum + state["2019"], 0);
+  // Calculate statistics for the selected year
+  const statistics = useMemo(() => {
+    const totalAccidents = Object.values(mockData.yearly_data)
+      .reduce((sum, state) => sum + state[selectedYear], 0);
 
-  const averageAccidents = Math.round(totalAccidents2019 / Object.keys(mockData.yearly_data).length);
+    const averageAccidents = Math.round(totalAccidents / Object.keys(mockData.yearly_data).length);
+
+    const yearOverYearChange = (() => {
+      if (selectedYear === "2016") return null;
+      const prevYear = (parseInt(selectedYear) - 1).toString();
+      const currentTotal = Object.values(mockData.yearly_data)
+        .reduce((sum, state) => sum + state[selectedYear], 0);
+      const prevTotal = Object.values(mockData.yearly_data)
+        .reduce((sum, state) => sum + state[prevYear], 0);
+      return ((currentTotal - prevTotal) / prevTotal * 100).toFixed(1);
+    })();
+
+    return { totalAccidents, averageAccidents, yearOverYearChange };
+  }, [selectedYear]);
 
   return (
     <div className="container mx-auto p-4">
@@ -140,21 +147,46 @@ export default function Dashboard() {
         </p>
       </div>
 
+      <div className="mb-6">
+        <Select value={selectedYear} onValueChange={setSelectedYear}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Select year" />
+          </SelectTrigger>
+          <SelectContent>
+            {years.map(year => (
+              <SelectItem key={year} value={year}>
+                Year {year}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mb-6">
         <Card>
           <CardHeader>
-            <CardTitle>Total Accidents (2019)</CardTitle>
+            <CardTitle>Total Accidents ({selectedYear})</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-bold">{totalAccidents2019.toLocaleString()}</p>
+            <p className="text-3xl font-bold">{statistics.totalAccidents.toLocaleString()}</p>
+            {statistics.yearOverYearChange !== null && (
+              <p className={`text-sm mt-2 ${
+                Number(statistics.yearOverYearChange) > 0 
+                  ? 'text-red-500' 
+                  : 'text-green-500'
+              }`}>
+                {Number(statistics.yearOverYearChange) > 0 ? '↑' : '↓'} {
+                  Math.abs(Number(statistics.yearOverYearChange))}% from previous year
+              </p>
+            )}
           </CardContent>
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle>Average by State</CardTitle>
+            <CardTitle>Average by State ({selectedYear})</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-bold">{averageAccidents.toLocaleString()}</p>
+            <p className="text-3xl font-bold">{statistics.averageAccidents.toLocaleString()}</p>
           </CardContent>
         </Card>
         <Card>
