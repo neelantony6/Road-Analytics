@@ -6,37 +6,26 @@ function AccidentTrends({ data }) {
   const isMobile = useMediaQuery("(max-width: 768px)");
 
   const chartData = useMemo(() => {
-    const years = Object.keys(data?.yearly_data || {}).sort();
-    const totalAccidents = years.map(year => data.yearly_data[year].total);
-    const fatalAccidents = years.map(year => data.yearly_data[year].fatal);
+    // Format data for Plotly, similar to Python implementation
+    const states = Object.keys(data?.yearly_data || {});
+    const years = ['2016', '2017', '2018', '2019'];
 
-    return [
-      {
-        x: years,
-        y: totalAccidents,
-        type: 'line',
-        name: 'Total Accidents',
-        marker: { color: 'blue' },
-        hovertemplate: '<b>%{x}</b><br>' +
-          'Total Accidents: %{y}<br>' +
-          '<extra></extra>'
-      },
-      {
-        x: years,
-        y: fatalAccidents,
-        type: 'line',
-        name: 'Fatal Accidents',
-        marker: { color: 'red' },
-        hovertemplate: '<b>%{x}</b><br>' +
-          'Fatal Accidents: %{y}<br>' +
-          '<extra></extra>'
-      }
-    ];
+    // Create a line for each state
+    return states.map(state => ({
+      x: years,
+      y: years.map(year => data.yearly_data[state]?.[year] || 0),
+      type: 'scatter',
+      mode: 'lines',
+      name: state,
+      hovertemplate: '<b>%{x}</b><br>' +
+        'Total Accidents: %{y}<br>' +
+        '<extra></extra>'
+    }));
   }, [data]);
 
   return (
     <div className="w-full relative">
-      <h2 className="text-xl font-semibold mb-4">Accident Trends Over Time</h2>
+      <h2 className="text-xl font-semibold mb-4">Road Accident Trends Across States (2016–2019)</h2>
       <Plot
         data={chartData}
         layout={{
@@ -50,7 +39,7 @@ function AccidentTrends({ data }) {
             fixedrange: isMobile
           },
           yaxis: { 
-            title: 'Number of Accidents',
+            title: 'Total Road Accidents',
             fixedrange: isMobile
           },
           showlegend: true,
@@ -59,9 +48,14 @@ function AccidentTrends({ data }) {
             y: -0.3,
             x: 0.5,
             xanchor: 'center'
-          } : undefined,
+          } : {
+            x: 1,
+            xanchor: 'right',
+            y: 1
+          },
           dragmode: isMobile ? false : 'zoom',
-          hovermode: 'closest'
+          hovermode: 'closest',
+          template: "plotly"
         }}
         config={{
           responsive: true,

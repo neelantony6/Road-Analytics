@@ -1,61 +1,53 @@
-
 import React from "react";
 import Plot from "react-plotly.js";
 import { useMediaQuery } from "@/hooks/use-media-query";
 
 interface RoadAccidentGraphProps {
-  data?: {
-    years: string[];
-    accidents: number[];
+  data: {
+    stateUT: string[];
+    accidents2019: number[];
   };
 }
 
-const RoadAccidentGraph: React.FC<RoadAccidentGraphProps> = ({ 
-  data = {
-    years: ["2016", "2017", "2018", "2019", "2020"],
-    accidents: [50000, 52000, 53000, 51000, 48000]
-  } 
-}) => {
+const RoadAccidentGraph: React.FC<RoadAccidentGraphProps> = ({ data }) => {
   const isMobile = useMediaQuery("(max-width: 768px)");
 
   return (
     <div className="w-full relative">
-      <h2 className="text-xl font-semibold mb-4">Road Accident Trends</h2>
+      <h2 className="text-xl font-semibold mb-4">Top States/UTs with Most Road Accidents (2019)</h2>
       <Plot
         data={[
           {
-            x: data.years,
-            y: data.accidents,
-            type: "scatter",
-            mode: "lines+markers",
+            x: data.stateUT,
+            y: data.accidents2019,
+            type: "bar",
+            text: data.accidents2019.map(String),
+            textposition: 'outside',
             marker: { color: "rgb(136, 132, 216)" },
-            name: "Total Accidents",
-            hovertemplate: 'Year: %{x}<br>Accidents: %{y}<extra></extra>'
+            hovertemplate: '<b>%{x}</b><br>' +
+              'Road Accidents (2019): %{y}<br>' +
+              '<extra></extra>'
           }
         ]}
         layout={{
           autosize: true,
           height: isMobile ? 300 : 400,
           margin: isMobile 
-            ? { l: 40, r: 20, t: 30, b: 40 }
-            : { l: 50, r: 50, t: 30, b: 50 },
+            ? { l: 40, r: 20, t: 30, b: 100 }
+            : { l: 50, r: 50, t: 30, b: 120 },
           xaxis: { 
-            title: 'Year',
+            title: 'States/UTs',
+            tickangle: 45,
             fixedrange: isMobile
           },
           yaxis: { 
-            title: 'Number of Accidents',
+            title: 'Road Accidents (2019)',
             fixedrange: isMobile
           },
-          showlegend: true,
-          legend: isMobile ? {
-            orientation: 'h',
-            y: -0.3,
-            x: 0.5,
-            xanchor: 'center'
-          } : undefined,
+          showlegend: false,
           dragmode: isMobile ? false : 'zoom',
-          hovermode: 'closest'
+          hovermode: 'closest',
+          template: "plotly"
         }}
         config={{
           responsive: true,
