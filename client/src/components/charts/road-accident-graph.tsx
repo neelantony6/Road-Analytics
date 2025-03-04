@@ -1,31 +1,63 @@
-import React from "react";
+import React, { useState, useMemo } from "react";
 import Plot from "react-plotly.js";
 import { useMediaQuery } from "@/hooks/use-media-query";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface RoadAccidentGraphProps {
   data: {
-    stateUT: string[];
-    accidents2019: number[];
+    yearly_data: {
+      [state: string]: {
+        [year: string]: number;
+      };
+    };
   };
 }
 
 const RoadAccidentGraph: React.FC<RoadAccidentGraphProps> = ({ data }) => {
   const isMobile = useMediaQuery("(max-width: 768px)");
+  const [selectedYear, setSelectedYear] = useState("2019");
+  const years = ["2016", "2017", "2018", "2019"];
+
+  const chartData = useMemo(() => {
+    // Sort states by accident count for the selected year
+    const sortedData = Object.entries(data.yearly_data)
+      .sort(([, a], [, b]) => b[selectedYear] - a[selectedYear]);
+
+    return {
+      stateUT: sortedData.map(([state]) => state),
+      accidents: sortedData.map(([, yearData]) => yearData[selectedYear])
+    };
+  }, [data, selectedYear]);
 
   return (
-    <div className="w-full relative">
-      <h2 className="text-xl font-semibold mb-4">Top States/UTs with Most Road Accidents (2019)</h2>
+    <div className="w-full relative space-y-4">
+      <div className="flex items-center justify-between">
+        <h2 className="text-xl font-semibold">Top States/UTs with Most Road Accidents</h2>
+        <Select value={selectedYear} onValueChange={setSelectedYear}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Select year" />
+          </SelectTrigger>
+          <SelectContent>
+            {years.map(year => (
+              <SelectItem key={year} value={year}>
+                Year {year}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
       <Plot
         data={[
           {
-            x: data.stateUT,
-            y: data.accidents2019,
+            x: chartData.stateUT,
+            y: chartData.accidents,
             type: "bar",
-            text: data.accidents2019.map(String),
+            text: chartData.accidents.map(String),
             textposition: 'outside',
             marker: { color: "rgb(136, 132, 216)" },
             hovertemplate: '<b>%{x}</b><br>' +
-              'Road Accidents (2019): %{y}<br>' +
+              `Road Accidents (${selectedYear}): %{y}<br>` +
               '<extra></extra>'
           }
         ]}
@@ -41,7 +73,7 @@ const RoadAccidentGraph: React.FC<RoadAccidentGraphProps> = ({ data }) => {
             fixedrange: isMobile
           },
           yaxis: { 
-            title: 'Road Accidents (2019)',
+            title: `Road Accidents (${selectedYear})`,
             fixedrange: isMobile
           },
           showlegend: false,

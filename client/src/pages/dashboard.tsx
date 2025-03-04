@@ -180,7 +180,7 @@ export default function Dashboard() {
           <AccidentTrends data={filteredData} />
         </Card>
         <Card className="p-4">
-          <RoadAccidentGraph data={top2019Data} />
+          <RoadAccidentGraph data={mockData} />
         </Card>
       </div>
 
