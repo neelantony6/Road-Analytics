@@ -3,7 +3,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import StateFilter from "@/components/state-filter";
 import AccidentTrends from "@/components/charts/accident-trends";
 import StateComparison from "@/components/charts/state-comparison";
-import AccidentSearch from "@/components/accident-search";
+import AccidentSearch from "@/components/search/accident-search";
 
 const mockAccidentTrendsData = {
   labels: ['2019', '2020', '2021', '2022'],
@@ -85,15 +85,19 @@ export default function Dashboard() {
       </div>
 
       <div className="mb-6">
-        <StateFilter />
+        <StateFilter 
+          states={Object.keys(mockData)} 
+          selectedState={selectedState} 
+          onStateChange={setSelectedState} 
+        />
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 mb-6">
-        <AccidentTrends />
-        <StateComparison />
+        <AccidentTrends data={preparedAccidentTrendsData} />
+        <StateComparison data={filteredData} />
       </div>
 
-      <AccidentSearch />
+      <AccidentSearch data={mockData} states={Object.keys(mockData)} />
     </div>
   );
 }

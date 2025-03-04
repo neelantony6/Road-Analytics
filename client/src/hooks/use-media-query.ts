@@ -17,3 +17,28 @@ export function useMediaQuery(query: string): boolean {
 
   return matches;
 }
+import { useState, useEffect } from "react";
+
+export function useMediaQuery(query: string): boolean {
+  const [matches, setMatches] = useState<boolean>(false);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia(query);
+    const updateMatches = (e: MediaQueryListEvent) => {
+      setMatches(e.matches);
+    };
+
+    // Initial check
+    setMatches(mediaQuery.matches);
+
+    // Add listener
+    mediaQuery.addEventListener("change", updateMatches);
+
+    // Cleanup
+    return () => {
+      mediaQuery.removeEventListener("change", updateMatches);
+    };
+  }, [query]);
+
+  return matches;
+}
