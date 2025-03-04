@@ -5,6 +5,7 @@ import AccidentTrends from "@/components/charts/accident-trends";
 import RoadAccidentGraph from "@/components/charts/road-accident-graph";
 import AccidentSearch from "@/components/search/accident-search";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import IndiaMap from "@/components/charts/india-map";
 
 // Complete data from the CSV file
 const mockData = {
@@ -171,8 +172,8 @@ export default function Dashboard() {
             <p className="text-3xl font-bold">{statistics.totalAccidents.toLocaleString()}</p>
             {statistics.yearOverYearChange !== null && (
               <p className={`text-sm mt-2 ${
-                Number(statistics.yearOverYearChange) > 0 
-                  ? 'text-red-500' 
+                Number(statistics.yearOverYearChange) > 0
+                  ? 'text-red-500'
                   : 'text-green-500'
               }`}>
                 {Number(statistics.yearOverYearChange) > 0 ? '↑' : '↓'} {
@@ -200,11 +201,17 @@ export default function Dashboard() {
       </div>
 
       <div className="mb-6">
-        <StateFilter 
-          states={Object.keys(mockData.yearly_data)} 
-          selectedState={selectedState} 
-          onStateChange={setSelectedState} 
+        <StateFilter
+          states={Object.keys(mockData.yearly_data)}
+          selectedState={selectedState}
+          onStateChange={setSelectedState}
         />
+      </div>
+
+      <div className="grid gap-6 mb-6">
+        <Card className="p-4">
+          <IndiaMap data={mockData} selectedYear={selectedYear} />
+        </Card>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 mb-6">
