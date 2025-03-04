@@ -5,7 +5,7 @@ import AccidentTrends from "@/components/charts/accident-trends";
 import RoadAccidentGraph from "@/components/charts/road-accident-graph";
 import AccidentSearch from "@/components/search/accident-search";
 
-// Mock data matching the Python script's structure
+// Complete data from the CSV file
 const mockData = {
   yearly_data: {
     "Tamil Nadu": {
@@ -25,15 +25,90 @@ const mockData = {
       "2017": 42542,
       "2018": 41707,
       "2019": 40658
+    },
+    "Maharashtra": {
+      "2016": 39878,
+      "2017": 35853,
+      "2018": 35717,
+      "2019": 32925
+    },
+    "Kerala": {
+      "2016": 39420,
+      "2017": 38470,
+      "2018": 40181,
+      "2019": 41111
+    },
+    "Uttar Pradesh": {
+      "2016": 35612,
+      "2017": 38783,
+      "2018": 42568,
+      "2019": 37537
+    },
+    "Rajasthan": {
+      "2016": 23066,
+      "2017": 23785,
+      "2018": 21911,
+      "2019": 23480
+    },
+    "Andhra Pradesh": {
+      "2016": 24888,
+      "2017": 24475,
+      "2018": 24475,
+      "2019": 21964
+    },
+    "Gujarat": {
+      "2016": 21859,
+      "2017": 19081,
+      "2018": 18701,
+      "2019": 17046
+    },
+    "Telangana": {
+      "2016": 22811,
+      "2017": 22484,
+      "2018": 22224,
+      "2019": 21570
+    },
+    "Chhattisgarh": {
+      "2016": 13580,
+      "2017": 13580,
+      "2018": 13899,
+      "2019": 13899
+    },
+    "West Bengal": {
+      "2016": 13580,
+      "2017": 13580,
+      "2018": 13899,
+      "2019": 13899
+    },
+    "Haryana": {
+      "2016": 11234,
+      "2017": 11258,
+      "2018": 11238,
+      "2019": 10944
+    },
+    "Bihar": {
+      "2016": 8855,
+      "2017": 8855,
+      "2018": 8855,
+      "2019": 8855
+    },
+    "Odisha": {
+      "2016": 10532,
+      "2017": 10855,
+      "2018": 11262,
+      "2019": 11064
     }
-    // Add more states as needed
   }
 };
 
-// Prepare data for the bar chart
+// Sort states by 2019 accidents for the bar chart
+const sortedStates = Object.entries(mockData.yearly_data)
+  .sort(([, a], [, b]) => b["2019"] - a["2019"])
+  .map(([state]) => state);
+
 const top2019Data = {
-  stateUT: Object.keys(mockData.yearly_data),
-  accidents2019: Object.values(mockData.yearly_data).map(data => data["2019"])
+  stateUT: sortedStates,
+  accidents2019: sortedStates.map(state => mockData.yearly_data[state]["2019"])
 };
 
 export default function Dashboard() {
