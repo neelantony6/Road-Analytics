@@ -4,7 +4,6 @@ import { useQuery } from "@tanstack/react-query";
 import { AlertCircle, TrendingDown, TrendingUp } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import LoadingSpinner from "@/components/ui/loading-spinner";
-import AccidentTrends from "@/components/charts/accident-trends";
 import RoadAccidentGraph from "@/components/charts/road-accident-graph";
 import { firebaseService } from "@/lib/firebase";
 
@@ -27,23 +26,32 @@ function AnalyticsView() {
       <Alert variant="destructive" className="m-4">
         <AlertCircle className="h-4 w-4" />
         <AlertDescription>
-          Failed to load analytics data. Please try again later.
+          Failed to load analytics data: {error.message}
         </AlertDescription>
       </Alert>
     );
   }
 
-  const calculateTrends = (data) => {
-    if (!data || Object.keys(data).length === 0) return null;
+  if (!accidentData || Object.keys(accidentData).length === 0) {
+    return (
+      <Alert className="m-4">
+        <AlertCircle className="h-4 w-4" />
+        <AlertDescription>
+          No analytics data available.
+        </AlertDescription>
+      </Alert>
+    );
+  }
 
-    const states = Object.keys(data);
+  // Calculate trends based on the Firebase data structure
+  const calculateTrends = () => {
+    const states = Object.keys(accidentData);
     const years = ["2016", "2017", "2018", "2019"];
 
     // Calculate overall trend
     const totalsByYear = years.map(year => 
       states.reduce((sum, state) => {
-        const yearlyData = data[state]?.yearly_data || {};
-        return sum + (yearlyData[year]?.total || 0);
+        return sum + (accidentData[state][year] || 0);
       }, 0)
     );
 
@@ -51,9 +59,8 @@ function AnalyticsView() {
 
     // Find states with most significant changes
     const stateChanges = states.map(state => {
-      const yearlyData = data[state]?.yearly_data || {};
-      const change = ((yearlyData["2019"]?.total - yearlyData["2016"]?.total) 
-        / yearlyData["2016"]?.total * 100).toFixed(1);
+      const stateData = accidentData[state];
+      const change = ((stateData["2019"] - stateData["2016"]) / stateData["2016"] * 100).toFixed(1);
       return { state, change: Number(change) };
     });
 
@@ -69,18 +76,7 @@ function AnalyticsView() {
     };
   };
 
-  const trends = calculateTrends(accidentData);
-
-  if (!trends) {
-    return (
-      <Alert className="m-4">
-        <AlertCircle className="h-4 w-4" />
-        <AlertDescription>
-          No analytics data available.
-        </AlertDescription>
-      </Alert>
-    );
-  }
+  const trends = calculateTrends();
 
   return (
     <div className="container mx-auto px-4 py-8 space-y-8">
@@ -151,14 +147,14 @@ function AnalyticsView() {
           <li className="flex items-start gap-2">
             <span className="bg-primary/10 p-1 rounded-full mt-1">•</span>
             <span>
-              Data shows significant variations in accident rates across different states,
+              Data analysis shows significant variations in accident rates across different states,
               highlighting the need for targeted safety measures.
             </span>
           </li>
           <li className="flex items-start gap-2">
             <span className="bg-primary/10 p-1 rounded-full mt-1">•</span>
             <span>
-              {trends.mostImproved.state} demonstrates the most improvement,
+              {trends.mostImproved.state} has shown the most improvement,
               suggesting effective safety initiatives that could be replicated.
             </span>
           </li>
@@ -166,7 +162,7 @@ function AnalyticsView() {
             <span className="bg-primary/10 p-1 rounded-full mt-1">•</span>
             <span>
               {trends.mostDeclined.state} shows concerning trends,
-              indicating a need for immediate intervention and safety measures.
+              indicating a need for immediate intervention and enhanced safety measures.
             </span>
           </li>
         </ul>

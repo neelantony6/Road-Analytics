@@ -5,10 +5,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 interface RoadAccidentGraphProps {
   data: {
-    yearly_data: {
-      [state: string]: {
-        [year: string]: number;
-      };
+    [state: string]: {
+      [year: string]: number;
     };
   };
 }
@@ -20,12 +18,16 @@ const RoadAccidentGraph: React.FC<RoadAccidentGraphProps> = ({ data }) => {
 
   const chartData = useMemo(() => {
     // Sort states by accident count for the selected year
-    const sortedData = Object.entries(data.yearly_data)
-      .sort(([, a], [, b]) => b[selectedYear] - a[selectedYear]);
+    const sortedData = Object.entries(data)
+      .map(([state, yearData]) => ({
+        state,
+        accidents: yearData[selectedYear] || 0
+      }))
+      .sort((a, b) => b.accidents - a.accidents);
 
     return {
-      stateUT: sortedData.map(([state]) => state),
-      accidents: sortedData.map(([, yearData]) => yearData[selectedYear])
+      stateUT: sortedData.map(item => item.state),
+      accidents: sortedData.map(item => item.accidents)
     };
   }, [data, selectedYear]);
 
@@ -55,7 +57,7 @@ const RoadAccidentGraph: React.FC<RoadAccidentGraphProps> = ({ data }) => {
             type: "bar",
             text: chartData.accidents.map(String),
             textposition: 'outside',
-            marker: { color: "rgb(136, 132, 216)" },
+            marker: { color: "rgb(99, 102, 241)" },
             hovertemplate: '<b>%{x}</b><br>' +
               `Road Accidents (${selectedYear}): %{y}<br>` +
               '<extra></extra>'
