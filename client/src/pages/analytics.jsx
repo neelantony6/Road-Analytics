@@ -10,7 +10,9 @@ import { firebaseService } from "@/lib/firebase";
 function AnalyticsView() {
   const { data: accidentData, isLoading, error } = useQuery({
     queryKey: ['accidentData'],
-    queryFn: firebaseService.getAccidentData
+    queryFn: firebaseService.getAccidentData,
+    retry: 3,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000)
   });
 
   if (isLoading) {

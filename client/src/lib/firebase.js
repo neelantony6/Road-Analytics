@@ -1,6 +1,7 @@
 // Firebase configuration and service
 import { initializeApp } from "firebase/app";
-import { getDatabase, ref, get, query, orderByChild } from "firebase/database";
+import { getDatabase, ref, get } from "firebase/database";
+import { getAuth, signInAnonymously } from "firebase/auth";
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -14,12 +15,30 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
+const auth = getAuth(app);
+
+// Initialize anonymous authentication on load
+signInAnonymously(auth)
+  .then(() => {
+    console.log('Anonymous authentication successful');
+  })
+  .catch((error) => {
+    console.error('Anonymous authentication failed:', error);
+  });
 
 // Firebase Data Service
 export const firebaseService = {
   // Get all accident data
   async getAccidentData() {
     try {
+      // Wait for auth to initialize
+      await new Promise((resolve) => {
+        const unsubscribe = auth.onAuthStateChanged((user) => {
+          unsubscribe();
+          resolve(user);
+        });
+      });
+
       const accidentRef = ref(db, 'accident_data');
       const snapshot = await get(accidentRef);
 
