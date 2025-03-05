@@ -62,6 +62,7 @@ const IndiaMap: React.FC<IndiaMapProps> = ({ data, selectedYear }) => {
               geographies.map(geo => {
                 const stateName = geo.properties.NAME_1;
                 const accidents = getStateAccidents(stateName);
+                // Using aria-label instead of title for accessibility
                 return (
                   <Geography
                     key={geo.rsmKey}
@@ -80,7 +81,7 @@ const IndiaMap: React.FC<IndiaMapProps> = ({ data, selectedYear }) => {
                       }
                     }}
                     className="transition-colors duration-200"
-                    title={`${stateName}: ${accidents.toLocaleString()} accidents`}
+                    aria-label={`${stateName}: ${accidents.toLocaleString()} accidents`}
                   />
                 );
               })
