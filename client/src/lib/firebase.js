@@ -1,65 +1,82 @@
-// Mock Firebase service implementation
+// Firebase configuration and service
+import { initializeApp } from "firebase/app";
+import { getDatabase, ref, get, query, orderByChild } from "firebase/database";
+
+const firebaseConfig = {
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: `${import.meta.env.VITE_FIREBASE_PROJECT_ID}.firebaseapp.com`,
+  databaseURL: "https://alt-coursework-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: `${import.meta.env.VITE_FIREBASE_PROJECT_ID}.appspot.com`,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+// Firebase Data Service
 export const firebaseService = {
   // Get all accident data
   async getAccidentData() {
-    return {
-      "Maharashtra": { 
-        total_accidents: 15234, 
-        fatal_accidents: 3400,
-        yearly_data: {
-          "2019": { total: 12187, fatal: 2720 },
-          "2020": { total: 12950, fatal: 2890 },
-          "2021": { total: 13710, fatal: 3060 },
-          "2022": { total: 14472, fatal: 3230 },
-          "2023": { total: 15234, fatal: 3400 }
-        }
-      },
-      "Delhi": { 
-        total_accidents: 12000, 
-        fatal_accidents: 2800,
-        yearly_data: {
-          "2019": { total: 9600, fatal: 2240 },
-          "2020": { total: 10200, fatal: 2380 },
-          "2021": { total: 10800, fatal: 2520 },
-          "2022": { total: 11400, fatal: 2660 },
-          "2023": { total: 12000, fatal: 2800 }
-        }
-      },
-      "Tamil Nadu": { 
-        total_accidents: 18050, 
-        fatal_accidents: 4000,
-        yearly_data: {
-          "2019": { total: 14440, fatal: 3200 },
-          "2020": { total: 15342, fatal: 3400 },
-          "2021": { total: 16245, fatal: 3600 },
-          "2022": { total: 17147, fatal: 3800 },
-          "2023": { total: 18050, fatal: 4000 }
-        }
+    try {
+      const accidentRef = ref(db, 'accident_data');
+      const snapshot = await get(accidentRef);
+
+      if (snapshot.exists()) {
+        return snapshot.val();
+      } else {
+        console.error('No data available in the database');
+        return {};
       }
-    };
+    } catch (error) {
+      console.error('Error fetching accident data:', error);
+      throw error;
+    }
   },
 
-  // Mock other methods with empty implementations
-  async submitTrafficReport() {
-    return { success: true };
+  // Search accident data
+  async searchAccidentData(searchTerm) {
+    try {
+      const accidentRef = ref(db, 'accident_data');
+      const snapshot = await get(accidentRef);
+
+      if (!snapshot.exists()) {
+        return [];
+      }
+
+      const data = snapshot.val();
+      const searchTermLower = searchTerm.toLowerCase();
+
+      return Object.entries(data)
+        .filter(([state]) => state.toLowerCase().includes(searchTermLower))
+        .map(([state, data]) => ({
+          state,
+          ...data
+        }));
+    } catch (error) {
+      console.error('Error searching accident data:', error);
+      throw error;
+    }
   },
 
-  async submitSafetySuggestion() {
-    return { success: true };
-  },
+  // Get yearly trend data
+  async getYearlyTrends() {
+    try {
+      const trendsRef = ref(db, 'yearly_trends');
+      const snapshot = await get(trendsRef);
 
-  async getTrafficReports() {
-    return [];
-  },
-
-  async getSafetySuggestions() {
-    return [];
-  },
-
-  async upvoteSuggestion() {
-    return { success: true };
+      if (snapshot.exists()) {
+        return snapshot.val();
+      } else {
+        console.error('No trend data available');
+        return {};
+      }
+    } catch (error) {
+      console.error('Error fetching trend data:', error);
+      throw error;
+    }
   }
 };
 
-// Export mock db
-export const db = {};
+export { db };

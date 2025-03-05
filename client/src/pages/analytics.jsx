@@ -1,55 +1,86 @@
+import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
 import { AlertCircle, TrendingDown, TrendingUp } from "lucide-react";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import LoadingSpinner from "@/components/ui/loading-spinner";
 import AccidentTrends from "@/components/charts/accident-trends";
 import RoadAccidentGraph from "@/components/charts/road-accident-graph";
-
-const mockData = {
-  yearly_data: {
-    "Tamil Nadu": {
-      "2016": 71431,
-      "2017": 65562,
-      "2018": 63920,
-      "2019": 57228
-    },
-    // ... (rest of the states data)
-  }
-};
-
-function calculateTrends(data) {
-  const states = Object.keys(data.yearly_data);
-  const years = ["2016", "2017", "2018", "2019"];
-
-  // Calculate overall trend
-  const totalsByYear = years.map(year => 
-    states.reduce((sum, state) => sum + data.yearly_data[state][year], 0)
-  );
-
-  const overallChange = ((totalsByYear[3] - totalsByYear[0]) / totalsByYear[0] * 100).toFixed(1);
-
-  // Find states with most significant changes
-  const stateChanges = states.map(state => {
-    const change = ((data.yearly_data[state]["2019"] - data.yearly_data[state]["2016"]) 
-      / data.yearly_data[state]["2016"] * 100).toFixed(1);
-    return { state, change: Number(change) };
-  });
-
-  const mostImproved = stateChanges.sort((a, b) => a.change - b.change)[0];
-  const mostDeclined = stateChanges.sort((a, b) => b.change - a.change)[0];
-
-  return {
-    overallChange: Number(overallChange),
-    mostImproved,
-    mostDeclined,
-    totalAccidents2019: totalsByYear[3],
-    totalAccidents2016: totalsByYear[0]
-  };
-}
+import { firebaseService } from "@/lib/firebase";
 
 function AnalyticsView() {
-  const trends = calculateTrends(mockData);
+  const { data: accidentData, isLoading, error } = useQuery({
+    queryKey: ['accidentData'],
+    queryFn: firebaseService.getAccidentData
+  });
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <LoadingSpinner />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <Alert variant="destructive" className="m-4">
+        <AlertCircle className="h-4 w-4" />
+        <AlertDescription>
+          Failed to load analytics data. Please try again later.
+        </AlertDescription>
+      </Alert>
+    );
+  }
+
+  const calculateTrends = (data) => {
+    if (!data || Object.keys(data).length === 0) return null;
+
+    const states = Object.keys(data);
+    const years = ["2016", "2017", "2018", "2019"];
+
+    // Calculate overall trend
+    const totalsByYear = years.map(year => 
+      states.reduce((sum, state) => {
+        const yearlyData = data[state]?.yearly_data || {};
+        return sum + (yearlyData[year]?.total || 0);
+      }, 0)
+    );
+
+    const overallChange = ((totalsByYear[3] - totalsByYear[0]) / totalsByYear[0] * 100).toFixed(1);
+
+    // Find states with most significant changes
+    const stateChanges = states.map(state => {
+      const yearlyData = data[state]?.yearly_data || {};
+      const change = ((yearlyData["2019"]?.total - yearlyData["2016"]?.total) 
+        / yearlyData["2016"]?.total * 100).toFixed(1);
+      return { state, change: Number(change) };
+    });
+
+    const mostImproved = stateChanges.sort((a, b) => a.change - b.change)[0];
+    const mostDeclined = stateChanges.sort((a, b) => b.change - a.change)[0];
+
+    return {
+      overallChange: Number(overallChange),
+      mostImproved,
+      mostDeclined,
+      totalAccidents2019: totalsByYear[3],
+      totalAccidents2016: totalsByYear[0]
+    };
+  };
+
+  const trends = calculateTrends(accidentData);
+
+  if (!trends) {
+    return (
+      <Alert className="m-4">
+        <AlertCircle className="h-4 w-4" />
+        <AlertDescription>
+          No analytics data available.
+        </AlertDescription>
+      </Alert>
+    );
+  }
 
   return (
     <div className="container mx-auto px-4 py-8 space-y-8">
@@ -107,12 +138,9 @@ function AnalyticsView() {
       </div>
 
       {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid gap-6">
         <Card className="p-6">
-          <AccidentTrends data={mockData} />
-        </Card>
-        <Card className="p-6">
-          <RoadAccidentGraph data={mockData} />
+          <RoadAccidentGraph data={accidentData} />
         </Card>
       </div>
 
@@ -123,22 +151,22 @@ function AnalyticsView() {
           <li className="flex items-start gap-2">
             <span className="bg-primary/10 p-1 rounded-full mt-1">•</span>
             <span>
-              Tamil Nadu consistently shows the highest number of accidents,
-              but demonstrates a steady decline over the years.
+              Data shows significant variations in accident rates across different states,
+              highlighting the need for targeted safety measures.
             </span>
           </li>
           <li className="flex items-start gap-2">
             <span className="bg-primary/10 p-1 rounded-full mt-1">•</span>
             <span>
-              Most states show a downward trend in accident numbers from 2016 to 2019,
-              indicating improving road safety measures.
+              {trends.mostImproved.state} demonstrates the most improvement,
+              suggesting effective safety initiatives that could be replicated.
             </span>
           </li>
           <li className="flex items-start gap-2">
             <span className="bg-primary/10 p-1 rounded-full mt-1">•</span>
             <span>
-              The top 5 states account for over 50% of total accidents,
-              suggesting a need for focused intervention in these regions.
+              {trends.mostDeclined.state} shows concerning trends,
+              indicating a need for immediate intervention and safety measures.
             </span>
           </li>
         </ul>
