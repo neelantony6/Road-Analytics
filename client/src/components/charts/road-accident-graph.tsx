@@ -5,8 +5,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 interface RoadAccidentGraphProps {
   data: {
-    [state: string]: {
-      [year: string]: number;
+    yearly_data: {
+      [state: string]: {
+        [year: string]: number;
+      };
     };
   };
 }
@@ -18,16 +20,12 @@ const RoadAccidentGraph: React.FC<RoadAccidentGraphProps> = ({ data }) => {
 
   const chartData = useMemo(() => {
     // Sort states by accident count for the selected year
-    const sortedData = Object.entries(data)
-      .map(([state, yearData]) => ({
-        state,
-        accidents: yearData[selectedYear] || 0
-      }))
-      .sort((a, b) => b.accidents - a.accidents);
+    const sortedData = Object.entries(data.yearly_data)
+      .sort(([, a], [, b]) => b[selectedYear] - a[selectedYear]);
 
     return {
-      stateUT: sortedData.map(item => item.state),
-      accidents: sortedData.map(item => item.accidents)
+      stateUT: sortedData.map(([state]) => state),
+      accidents: sortedData.map(([, yearData]) => yearData[selectedYear] || 0) //Added || 0 for cases where data might be missing
     };
   }, [data, selectedYear]);
 
@@ -80,8 +78,7 @@ const RoadAccidentGraph: React.FC<RoadAccidentGraphProps> = ({ data }) => {
           },
           showlegend: false,
           dragmode: isMobile ? false : 'zoom',
-          hovermode: 'closest',
-          template: "plotly"
+          hovermode: 'closest'
         }}
         config={{
           responsive: true,

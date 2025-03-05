@@ -1,82 +1,75 @@
-import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
-import { useQuery } from "@tanstack/react-query";
-import { AlertCircle, TrendingDown, TrendingUp } from "lucide-react";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import LoadingSpinner from "@/components/ui/loading-spinner";
+import { TrendingDown, TrendingUp } from "lucide-react";
 import RoadAccidentGraph from "@/components/charts/road-accident-graph";
-import { firebaseService } from "@/lib/firebase";
 
-function AnalyticsView() {
-  const { data: accidentData, isLoading, error } = useQuery({
-    queryKey: ['accidentData'],
-    queryFn: firebaseService.getAccidentData
+// Mock data for analytics
+const mockData = {
+  yearly_data: {
+    "Tamil Nadu": {
+      "2016": 71431,
+      "2017": 65562,
+      "2018": 63920,
+      "2019": 57228
+    },
+    "Madhya Pradesh": {
+      "2016": 53972,
+      "2017": 53399,
+      "2018": 51397,
+      "2019": 50669
+    },
+    "Karnataka": {
+      "2016": 44403,
+      "2017": 42542,
+      "2018": 41707,
+      "2019": 40658
+    },
+    "Maharashtra": {
+      "2016": 39878,
+      "2017": 35853,
+      "2018": 35717,
+      "2019": 32925
+    },
+    "Kerala": {
+      "2016": 39420,
+      "2017": 38470,
+      "2018": 40181,
+      "2019": 41111
+    }
+  }
+};
+
+function calculateTrends(data) {
+  const states = Object.keys(data.yearly_data);
+  const years = ["2016", "2017", "2018", "2019"];
+
+  // Calculate overall trend
+  const totalsByYear = years.map(year => 
+    states.reduce((sum, state) => sum + data.yearly_data[state][year], 0)
+  );
+
+  const overallChange = ((totalsByYear[3] - totalsByYear[0]) / totalsByYear[0] * 100).toFixed(1);
+
+  // Find states with most significant changes
+  const stateChanges = states.map(state => {
+    const change = ((data.yearly_data[state]["2019"] - data.yearly_data[state]["2016"]) 
+      / data.yearly_data[state]["2016"] * 100).toFixed(1);
+    return { state, change: Number(change) };
   });
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <LoadingSpinner />
-      </div>
-    );
-  }
+  const mostImproved = stateChanges.sort((a, b) => a.change - b.change)[0];
+  const mostDeclined = stateChanges.sort((a, b) => b.change - a.change)[0];
 
-  if (error) {
-    return (
-      <Alert variant="destructive" className="m-4">
-        <AlertCircle className="h-4 w-4" />
-        <AlertDescription>
-          Failed to load analytics data: {error.message}
-        </AlertDescription>
-      </Alert>
-    );
-  }
-
-  if (!accidentData || Object.keys(accidentData).length === 0) {
-    return (
-      <Alert className="m-4">
-        <AlertCircle className="h-4 w-4" />
-        <AlertDescription>
-          No analytics data available.
-        </AlertDescription>
-      </Alert>
-    );
-  }
-
-  // Calculate trends based on the Firebase data structure
-  const calculateTrends = () => {
-    const states = Object.keys(accidentData);
-    const years = ["2016", "2017", "2018", "2019"];
-
-    // Calculate overall trend
-    const totalsByYear = years.map(year => 
-      states.reduce((sum, state) => {
-        return sum + (accidentData[state][year] || 0);
-      }, 0)
-    );
-
-    const overallChange = ((totalsByYear[3] - totalsByYear[0]) / totalsByYear[0] * 100).toFixed(1);
-
-    // Find states with most significant changes
-    const stateChanges = states.map(state => {
-      const stateData = accidentData[state];
-      const change = ((stateData["2019"] - stateData["2016"]) / stateData["2016"] * 100).toFixed(1);
-      return { state, change: Number(change) };
-    });
-
-    const mostImproved = stateChanges.sort((a, b) => a.change - b.change)[0];
-    const mostDeclined = stateChanges.sort((a, b) => b.change - a.change)[0];
-
-    return {
-      overallChange: Number(overallChange),
-      mostImproved,
-      mostDeclined,
-      totalAccidents2019: totalsByYear[3],
-      totalAccidents2016: totalsByYear[0]
-    };
+  return {
+    overallChange: Number(overallChange),
+    mostImproved,
+    mostDeclined,
+    totalAccidents2019: totalsByYear[3],
+    totalAccidents2016: totalsByYear[0]
   };
+}
 
-  const trends = calculateTrends();
+function AnalyticsView() {
+  const trends = calculateTrends(mockData);
 
   return (
     <div className="container mx-auto px-4 py-8 space-y-8">
@@ -136,7 +129,7 @@ function AnalyticsView() {
       {/* Charts */}
       <div className="grid gap-6">
         <Card className="p-6">
-          <RoadAccidentGraph data={accidentData} />
+          <RoadAccidentGraph data={mockData} />
         </Card>
       </div>
 
@@ -147,22 +140,22 @@ function AnalyticsView() {
           <li className="flex items-start gap-2">
             <span className="bg-primary/10 p-1 rounded-full mt-1">•</span>
             <span>
-              Data analysis shows significant variations in accident rates across different states,
-              highlighting the need for targeted safety measures.
+              Tamil Nadu consistently shows the highest number of accidents,
+              but demonstrates a steady decline over the years.
             </span>
           </li>
           <li className="flex items-start gap-2">
             <span className="bg-primary/10 p-1 rounded-full mt-1">•</span>
             <span>
-              {trends.mostImproved.state} has shown the most improvement,
-              suggesting effective safety initiatives that could be replicated.
+              Most states show a downward trend in accident numbers from 2016 to 2019,
+              indicating improving road safety measures.
             </span>
           </li>
           <li className="flex items-start gap-2">
             <span className="bg-primary/10 p-1 rounded-full mt-1">•</span>
             <span>
-              {trends.mostDeclined.state} shows concerning trends,
-              indicating a need for immediate intervention and enhanced safety measures.
+              The top 5 states account for over 50% of total accidents,
+              suggesting a need for focused intervention in these regions.
             </span>
           </li>
         </ul>
