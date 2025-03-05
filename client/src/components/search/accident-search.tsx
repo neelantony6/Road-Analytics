@@ -1,7 +1,5 @@
-
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
@@ -17,19 +15,20 @@ export default function AccidentSearch({ data, states }: AccidentSearchProps) {
 
   const handleSearch = () => {
     if (selectedState && selectedYear && data[selectedState]) {
-      const yearData = data[selectedState].yearly_data[selectedYear];
-      if (yearData) {
+      const stateData = data[selectedState];
+      if (stateData[selectedYear]) {
         setSearchResult({
           state: selectedState,
           year: selectedYear,
-          total: yearData.total,
-          fatal: yearData.fatal
+          total: stateData[selectedYear]
         });
       } else {
         console.log('No data found for selected year');
+        setSearchResult(null);
       }
     } else {
       console.log('Please select both state and year');
+      setSearchResult(null);
     }
   };
 
@@ -53,7 +52,7 @@ export default function AccidentSearch({ data, states }: AccidentSearchProps) {
               <SelectValue placeholder="Select year" />
             </SelectTrigger>
             <SelectContent>
-              {["2019", "2020", "2021", "2022", "2023"].map(year => (
+              {["2019", "2018", "2017", "2016"].map(year => (
                 <SelectItem key={year} value={year}>{year}</SelectItem>
               ))}
             </SelectContent>
@@ -66,8 +65,7 @@ export default function AccidentSearch({ data, states }: AccidentSearchProps) {
             <h3 className="font-medium mb-2">Search Results</h3>
             <p>State: {searchResult.state}</p>
             <p>Year: {searchResult.year}</p>
-            <p>Total Accidents: {searchResult.total}</p>
-            <p>Fatal Accidents: {searchResult.fatal}</p>
+            <p>Total Accidents: {searchResult.total.toLocaleString()}</p>
           </div>
         )}
       </div>
