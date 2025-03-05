@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import {
   ComposableMap,
   Geographies,
@@ -7,6 +7,9 @@ import {
 } from "react-simple-maps";
 import { scaleLinear } from "d3-scale";
 import { useTheme } from "@/hooks/use-theme";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AlertCircle } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 // GeoJSON for India map with state boundaries
 const INDIA_TOPO_JSON = "https://raw.githubusercontent.com/deldersveld/topojson/master/countries/india/india-states.json";
@@ -24,63 +27,96 @@ interface IndiaMapProps {
 
 const IndiaMap: React.FC<IndiaMapProps> = ({ data, selectedYear }) => {
   const { theme } = useTheme();
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const colorScale = useMemo(() => {
-    // Get all accident values for the selected year
     const accidentValues = Object.values(data.yearly_data)
       .map(stateData => stateData[selectedYear]);
 
-    // Create a color scale from min to max values
     return scaleLinear<string>()
       .domain([Math.min(...accidentValues), Math.max(...accidentValues)])
       .range(theme === "dark" 
-        ? ["#1f2937", "#60a5fa"] // Dark mode colors
-        : ["#dbeafe", "#1d4ed8"]); // Light mode colors
+        ? ["#1f2937", "#60a5fa"]
+        : ["#dbeafe", "#1d4ed8"]);
   }, [data, selectedYear, theme]);
 
   const getStateAccidents = (stateName: string) => {
-    // Try to match state names with different formats
     const stateData = data.yearly_data[stateName] || 
                      data.yearly_data[stateName.toUpperCase()] ||
                      data.yearly_data[stateName.toLowerCase()];
     return stateData ? stateData[selectedYear] : 0;
   };
 
+  if (error) {
+    return (
+      <Alert variant="destructive">
+        <AlertCircle className="h-4 w-4" />
+        <AlertDescription>
+          {error}
+        </AlertDescription>
+      </Alert>
+    );
+  }
+
   return (
-    <div className="w-full h-[400px] relative">
+    <div className="w-full h-[500px] relative bg-background border rounded-lg p-4">
+      {isLoading && (
+        <div className="absolute inset-0 flex items-center justify-center">
+          <Skeleton className="w-full h-full rounded-lg" />
+        </div>
+      )}
       <ComposableMap
         projection="geoMercator"
         projectionConfig={{
           scale: 1000,
-          center: [78.9629, 22.5937] // Centered on India
+          center: [78.9629, 22.5937]
         }}
-        className="w-full h-full"
+        style={{
+          width: "100%",
+          height: "100%",
+          background: theme === "dark" ? "#020817" : "#ffffff"
+        }}
+        onError={(error) => {
+          console.error('Map loading error:', error);
+          setError('Failed to load the map. Please try again later.');
+        }}
+        onLoad={() => setIsLoading(false)}
       >
         <ZoomableGroup>
-          <Geographies geography={INDIA_TOPO_JSON}>
+          <Geographies 
+            geography={INDIA_TOPO_JSON}
+            onError={(error) => {
+              console.error('GeoJSON loading error:', error);
+              setError('Failed to load geographical data. Please try again later.');
+            }}
+          >
             {({ geographies }) =>
               geographies.map(geo => {
                 const stateName = geo.properties.NAME_1;
                 const accidents = getStateAccidents(stateName);
-                // Using aria-label instead of title for accessibility
                 return (
                   <Geography
                     key={geo.rsmKey}
                     geography={geo}
                     fill={accidents ? colorScale(accidents) : theme === "dark" ? "#374151" : "#e5e7eb"}
-                    stroke={theme === "dark" ? "#1f2937" : "#fff"}
+                    stroke={theme === "dark" ? "#1f2937" : "#ffffff"}
                     strokeWidth={0.5}
                     style={{
                       default: {
-                        outline: "none"
+                        outline: "none",
+                        transition: "all 250ms"
                       },
                       hover: {
                         fill: theme === "dark" ? "#60a5fa" : "#3b82f6",
                         outline: "none",
-                        cursor: "pointer"
+                        cursor: "pointer",
+                        transition: "all 250ms"
+                      },
+                      pressed: {
+                        outline: "none"
                       }
                     }}
-                    className="transition-colors duration-200"
                     aria-label={`${stateName}: ${accidents.toLocaleString()} accidents`}
                   />
                 );
@@ -89,13 +125,17 @@ const IndiaMap: React.FC<IndiaMapProps> = ({ data, selectedYear }) => {
           </Geographies>
         </ZoomableGroup>
       </ComposableMap>
-      <div className="absolute bottom-2 left-2 bg-card p-2 rounded shadow-sm">
-        <p className="text-sm font-medium">Accidents in {selectedYear}</p>
-        <div className="flex items-center gap-2 mt-1">
-          <div className="w-3 h-3" style={{ backgroundColor: theme === "dark" ? "#1f2937" : "#dbeafe" }} />
-          <span className="text-xs">Low</span>
-          <div className="w-3 h-3" style={{ backgroundColor: theme === "dark" ? "#60a5fa" : "#1d4ed8" }} />
-          <span className="text-xs">High</span>
+      <div className="absolute bottom-4 left-4 bg-card/80 backdrop-blur-sm p-3 rounded-lg shadow-lg">
+        <p className="text-sm font-medium mb-2">Accidents in {selectedYear}</p>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1">
+            <div className="w-4 h-4 rounded" style={{ backgroundColor: theme === "dark" ? "#1f2937" : "#dbeafe" }} />
+            <span className="text-xs">Low</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <div className="w-4 h-4 rounded" style={{ backgroundColor: theme === "dark" ? "#60a5fa" : "#1d4ed8" }} />
+            <span className="text-xs">High</span>
+          </div>
         </div>
       </div>
     </div>
