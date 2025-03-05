@@ -5,7 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import NotFound from "@/pages/not-found";
 import Dashboard from "@/pages/dashboard";
 import SubmitReport from "@/pages/submit-report";
-import AnalyticsView from "@/pages/analytics";
+import AnalyticsView from "@/pages/analytics.jsx";
 import { MapIcon, BarChart3, FileInput, Moon, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/hooks/use-theme";
