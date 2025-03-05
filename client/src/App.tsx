@@ -45,16 +45,15 @@ function Navigation() {
               Submit Report
             </a>
             <Button
-              variant="ghost"
+              variant="outline"
               size="icon"
               onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-              className="flex items-center justify-center w-10 h-10 rounded-full hover:bg-primary/10"
-              title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+              className="ml-4"
             >
               {theme === "dark" ? (
-                <Sun className="h-[1.2rem] w-[1.2rem]" />
+                <Sun className="h-5 w-5" />
               ) : (
-                <Moon className="h-[1.2rem] w-[1.2rem]" />
+                <Moon className="h-5 w-5" />
               )}
               <span className="sr-only">Toggle theme</span>
             </Button>
