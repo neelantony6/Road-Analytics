@@ -48,11 +48,10 @@ export const queryClient = new QueryClient({
       refetchInterval: false,
       refetchOnWindowFocus: false,
       staleTime: Infinity,
-      retry: 3, // Add retries for failed queries
-      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
+      retry: false,
     },
     mutations: {
-      retry: 3,
+      retry: false,
     },
   },
 });
