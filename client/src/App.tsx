@@ -8,7 +8,8 @@ import SubmitReport from "@/pages/submit-report";
 import AnalyticsView from "@/pages/analytics.jsx";
 import { MapIcon, BarChart3, FileInput, Moon, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useTheme } from "@/hooks/use-theme";
+import { useTheme } from "@/components/theme-provider";
+import { ThemeProvider } from "@/components/theme-provider";
 
 function Navigation() {
   const { theme, setTheme } = useTheme();
@@ -48,7 +49,6 @@ function Navigation() {
               variant="outline"
               size="icon"
               onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-              className="ml-4"
             >
               {theme === "dark" ? (
                 <Sun className="h-5 w-5" />
@@ -82,10 +82,12 @@ function Router() {
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <Router />
-      <Toaster />
-    </QueryClientProvider>
+    <ThemeProvider defaultTheme="system" storageKey="app-theme">
+      <QueryClientProvider client={queryClient}>
+        <Router />
+        <Toaster />
+      </QueryClientProvider>
+    </ThemeProvider>
   );
 }
 

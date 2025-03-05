@@ -6,7 +6,7 @@ import {
   ZoomableGroup
 } from "react-simple-maps";
 import { scaleLinear } from "d3-scale";
-import { useTheme } from "@/hooks/use-theme";
+import { useTheme } from "@/components/theme-provider";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -37,8 +37,8 @@ const IndiaMap: React.FC<IndiaMapProps> = ({ data, selectedYear }) => {
     return scaleLinear<string>()
       .domain([Math.min(...accidentValues), Math.max(...accidentValues)])
       .range([
-        theme === "dark" ? "#374151" : "#dbeafe",  // Lighter colors to reduce glow
-        theme === "dark" ? "#3b82f6" : "#1e40af"   // Darker colors to reduce glow
+        theme === "dark" ? "#1f293766" : "#dbeafe66",  // Much lighter with transparency
+        theme === "dark" ? "#3b82f6cc" : "#1e40afcc"   // Less intense with transparency
       ]);
   }, [data, selectedYear, theme]);
 
@@ -67,7 +67,7 @@ const IndiaMap: React.FC<IndiaMapProps> = ({ data, selectedYear }) => {
         <p className="text-sm text-muted-foreground">State-wise road accident data visualization for {selectedYear}</p>
       </div>
 
-      <div className="relative w-full h-[500px] bg-background">
+      <div className="relative w-full h-[500px] bg-background/50">
         {isLoading && (
           <div className="absolute inset-0 flex items-center justify-center">
             <Skeleton className="w-full h-full" />
@@ -83,7 +83,7 @@ const IndiaMap: React.FC<IndiaMapProps> = ({ data, selectedYear }) => {
           style={{
             width: "100%",
             height: "100%",
-            background: "transparent"
+            background: theme === "dark" ? "#0f172a" : "#ffffff"
           }}
           onError={(error) => {
             console.error('Map loading error:', error);
@@ -107,8 +107,8 @@ const IndiaMap: React.FC<IndiaMapProps> = ({ data, selectedYear }) => {
                     <Geography
                       key={geo.rsmKey}
                       geography={geo}
-                      fill={accidents ? colorScale(accidents) : theme === "dark" ? "#374151" : "#f3f4f6"}
-                      stroke={theme === "dark" ? "#1f2937" : "#e5e7eb"}
+                      fill={accidents ? colorScale(accidents) : theme === "dark" ? "#1f293733" : "#f3f4f633"}
+                      stroke={theme === "dark" ? "#1f293766" : "#e5e7eb66"}
                       strokeWidth={0.5}
                       style={{
                         default: {
@@ -116,7 +116,7 @@ const IndiaMap: React.FC<IndiaMapProps> = ({ data, selectedYear }) => {
                           transition: "all 250ms"
                         },
                         hover: {
-                          fill: theme === "dark" ? "#3b82f6" : "#2563eb",
+                          fill: theme === "dark" ? "#3b82f6aa" : "#2563ebaa",
                           cursor: "pointer",
                           transition: "all 250ms"
                         }
@@ -135,13 +135,13 @@ const IndiaMap: React.FC<IndiaMapProps> = ({ data, selectedYear }) => {
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-1">
               <div className="w-4 h-4 rounded border" style={{ 
-                backgroundColor: theme === "dark" ? "#374151" : "#dbeafe"
+                backgroundColor: theme === "dark" ? "#1f293766" : "#dbeafe66"
               }} />
               <span className="text-xs">Low</span>
             </div>
             <div className="flex items-center gap-1">
               <div className="w-4 h-4 rounded border" style={{ 
-                backgroundColor: theme === "dark" ? "#3b82f6" : "#1e40af"
+                backgroundColor: theme === "dark" ? "#3b82f6cc" : "#1e40afcc"
               }} />
               <span className="text-xs">High</span>
             </div>
