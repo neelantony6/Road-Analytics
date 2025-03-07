@@ -1,19 +1,40 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { z } from "zod";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useToast } from "@/hooks/use-toast";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { firebaseService } from "@/lib/firebase";
-import { z } from "zod";
 import { AlertCircle } from "lucide-react";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { ref, push, get, getDatabase } from "firebase/database";
+import { db } from "@/lib/firebase";
+import { useToast } from "@/hooks/use-toast";
+import { useQueryClient } from "@tanstack/react-query";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
+
+
+// Form validation schema
+const accidentReportSchema = z.object({
+  location: z.string()
+    .min(3, "Location must be at least 3 characters")
+    .max(100, "Location must not exceed 100 characters"),
+  accidentType: z.enum(["collision", "pedestrian", "vehicle_failure"], {
+    required_error: "Please select an accident type",
+  }),
+  vehiclesInvolved: z.string()
+    .transform((val) => parseInt(val, 10))
+    .refine((num) => !isNaN(num) && num > 0 && num <= 10, {
+      message: "Number of vehicles must be between 1 and 10",
+    }),
+  date: z.string().min(1, "Date is required"),
+});
+
+type AccidentReport = z.infer<typeof accidentReportSchema>;
 
 // Form validation schemas with enhanced validation
 const trafficReportSchema = z.object({
@@ -46,7 +67,16 @@ type SafetySuggestion = z.infer<typeof safetySuggestionSchema>;
 export default function SubmitReport() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [submittedReports, setSubmittedReports] = useState<any[]>([]);
   const [submissionError, setSubmissionError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const form = useForm<AccidentReport>({
+    resolver: zodResolver(accidentReportSchema),
+    defaultValues: {
+      vehiclesInvolved: "1",
+    },
+  });
 
   const reportForm = useForm<TrafficReport>({
     resolver: zodResolver(trafficReportSchema),
@@ -105,29 +135,185 @@ export default function SubmitReport() {
     },
   });
 
+  useEffect(() => {
+    // Load existing reports
+    const loadReports = async () => {
+      try {
+        const reportsRef = ref(getDatabase(), 'accident_reports');
+        const snapshot = await get(reportsRef);
+        if (snapshot.exists()) {
+          const reports = Object.values(snapshot.val());
+          setSubmittedReports(reports);
+        }
+      } catch (error) {
+        console.error('Error loading reports:', error);
+        setError('Failed to load existing reports');
+      }
+    };
+
+    loadReports();
+  }, []);
+
+  const onSubmit = async (data: AccidentReport) => {
+    try {
+      setError(null);
+      const reportsRef = ref(getDatabase(), 'accident_reports');
+      await push(reportsRef, {
+        ...data,
+        timestamp: new Date().toISOString(),
+      });
+
+      // Refresh the reports list
+      const snapshot = await get(reportsRef);
+      if (snapshot.exists()) {
+        setSubmittedReports(Object.values(snapshot.val()));
+      }
+
+      form.reset();
+    } catch (error) {
+      console.error('Error submitting report:', error);
+      setError('Failed to submit report. Please try again.');
+    }
+  };
+
   return (
-    <div className="container mx-auto p-4 max-w-3xl">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold mb-2">Submit Traffic Safety Information</h1>
-        <p className="text-muted-foreground">
-          Help improve road safety by reporting incidents or suggesting safety improvements.
+    <div className="container mx-auto p-4 max-w-4xl">
+      <div className="mb-8">
+        <h1 className="text-4xl font-bold mb-3 bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
+          Data Collection [AR2]
+        </h1>
+        <p className="text-lg text-muted-foreground">
+          Submit accident report data for analysis
         </p>
       </div>
 
+      {error && (
+        <Alert variant="destructive" className="mb-6">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
       {submissionError && (
         <Alert variant="destructive" className="mb-6">
           <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Error</AlertTitle>
           <AlertDescription>{submissionError}</AlertDescription>
         </Alert>
       )}
 
-      <Tabs defaultValue="report" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-2">
+      <Tabs defaultValue="accidentReport" className="space-y-4">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="accidentReport">Accident Report</TabsTrigger>
           <TabsTrigger value="report">Incident Report</TabsTrigger>
           <TabsTrigger value="suggestion">Safety Suggestion</TabsTrigger>
         </TabsList>
 
+        <TabsContent value="accidentReport">
+          <Card>
+            <CardHeader>
+              <CardTitle>Submit Accident Report</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                  <FormField
+                    control={form.control}
+                    name="date"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Date of Incident</FormLabel>
+                        <FormControl>
+                          <Input type="date" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="location"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Location</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Enter incident location" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="accidentType"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Accident Type</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select accident type" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="collision">Vehicle Collision</SelectItem>
+                            <SelectItem value="pedestrian">Pedestrian Involved</SelectItem>
+                            <SelectItem value="vehicle_failure">Vehicle Failure</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="vehiclesInvolved"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Number of Vehicles Involved</FormLabel>
+                        <FormControl>
+                          <Input type="number" min="1" max="10" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <Button type="submit" className="w-full">
+                    Submit Report
+                  </Button>
+                </form>
+              </Form>
+            </CardContent>
+          </Card>
+
+          {/* Display submitted reports */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Submitted Reports</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {submittedReports.map((report, index) => (
+                  <div key={index} className="p-4 border rounded-lg">
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <p><strong>Date:</strong> {new Date(report.date).toLocaleDateString()}</p>
+                      <p><strong>Location:</strong> {report.location}</p>
+                      <p><strong>Type:</strong> {report.accidentType.replace('_', ' ')}</p>
+                      <p><strong>Vehicles:</strong> {report.vehiclesInvolved}</p>
+                    </div>
+                  </div>
+                ))}
+                {submittedReports.length === 0 && (
+                  <p className="text-muted-foreground text-center py-4">
+                    No reports submitted yet
+                  </p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
         <TabsContent value="report">
           <Card>
             <CardHeader>
@@ -152,7 +338,6 @@ export default function SubmitReport() {
                       </FormItem>
                     )}
                   />
-
                   <FormField
                     control={reportForm.control}
                     name="location"
@@ -183,11 +368,11 @@ export default function SubmitReport() {
                             {[1, 2, 3, 4, 5].map((level) => (
                               <SelectItem key={level} value={level.toString()}>
                                 {level} - {
-                                  level === 1 ? "Minor" : 
-                                  level === 2 ? "Moderate" :
-                                  level === 3 ? "Serious" :
-                                  level === 4 ? "Severe" :
-                                  "Critical"
+                                  level === 1 ? "Minor" :
+                                    level === 2 ? "Moderate" :
+                                      level === 3 ? "Serious" :
+                                        level === 4 ? "Severe" :
+                                          "Critical"
                                 }
                               </SelectItem>
                             ))}
@@ -205,7 +390,7 @@ export default function SubmitReport() {
                       <FormItem>
                         <FormLabel>Incident Description</FormLabel>
                         <FormControl>
-                          <Textarea 
+                          <Textarea
                             placeholder="Provide detailed information about the incident"
                             className="min-h-[100px]"
                             {...field}
@@ -224,7 +409,6 @@ export default function SubmitReport() {
             </CardContent>
           </Card>
         </TabsContent>
-
         <TabsContent value="suggestion">
           <Card>
             <CardHeader>
@@ -243,7 +427,7 @@ export default function SubmitReport() {
                       <FormItem>
                         <FormLabel>Your Suggestion</FormLabel>
                         <FormControl>
-                          <Textarea 
+                          <Textarea
                             placeholder="Describe your safety improvement suggestion"
                             className="min-h-[100px]"
                             {...field}

@@ -20,7 +20,7 @@ function Navigation() {
         <div className="flex h-16 items-center justify-between">
           <div className="flex items-center">
             <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
-              Traffic Safety Analytics
+              Road Safety Analytics
             </h1>
           </div>
           <div className="flex items-center space-x-8">
@@ -32,18 +32,18 @@ function Navigation() {
               Dashboard
             </a>
             <a 
+              href="/submit" 
+              className="text-foreground/80 hover:text-primary font-medium transition-colors flex items-center gap-2"
+            >
+              <FileInput className="w-4 h-4" />
+              Data Collection
+            </a>
+            <a 
               href="/analytics" 
               className="text-foreground/80 hover:text-primary font-medium transition-colors flex items-center gap-2"
             >
               <BarChart3 className="w-4 h-4" />
-              Analytics
-            </a>
-            <a 
-              href="/submit" 
-              className="bg-primary text-primary-foreground px-4 py-2 rounded-md font-medium hover:bg-primary/90 transition-colors flex items-center gap-2"
-            >
-              <FileInput className="w-4 h-4" />
-              Submit Report
+              Analysis
             </a>
             <Button
               variant="outline"
