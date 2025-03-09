@@ -67,10 +67,15 @@ export default function SubmitReport() {
   const { toast } = useToast();
   const [error] = useState(null);
 
-  // Query for fetching submitted reports
-  const { data: submittedReports = [] } = useQuery({
-    queryKey: ['submittedReports'],
+  // Queries for fetching reports
+  const { data: submittedAccidentReports = [] } = useQuery({
+    queryKey: ['accidentReports'],
     queryFn: () => firebaseService.getAccidentReports()
+  });
+
+  const { data: submittedTrafficReports = [] } = useQuery({
+    queryKey: ['trafficReports'],
+    queryFn: () => firebaseService.getTrafficReports()
   });
 
   // Form setup
@@ -297,6 +302,35 @@ export default function SubmitReport() {
               </Form>
             </CardContent>
           </Card>
+
+          {/* Display Recent Accident Reports */}
+          <Card className="mt-8">
+            <CardHeader>
+              <CardTitle>Recent Accident Reports</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {submittedAccidentReports.slice(0, 5).map((report, index) => (
+                  <div key={index} className="border-b pb-4 last:border-0">
+                    <div className="flex justify-between items-start mb-2">
+                      <p className="font-medium">{report.location}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {formatTimestamp(report.timestamp)}
+                      </p>
+                    </div>
+                    <p className="text-sm text-muted-foreground">{report.description}</p>
+                    <div className="mt-2 flex gap-4 text-sm">
+                      <span>Vehicles: {report.vehiclesInvolved}</span>
+                      <span>Injuries: {report.injuryCount}</span>
+                      {report.medicalAssistance && (
+                        <span className="text-red-500">Medical Assistance Required</span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="trafficReport">
@@ -376,37 +410,33 @@ export default function SubmitReport() {
               </Form>
             </CardContent>
           </Card>
+
+          {/* Display Recent Traffic Reports */}
+          <Card className="mt-8">
+            <CardHeader>
+              <CardTitle>Recent Traffic Reports</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {submittedTrafficReports.slice(0, 5).map((report, index) => (
+                  <div key={index} className="border-b pb-4 last:border-0">
+                    <div className="flex justify-between items-start mb-2">
+                      <p className="font-medium">{report.location}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {formatTimestamp(report.timestamp)}
+                      </p>
+                    </div>
+                    <p className="text-sm text-muted-foreground">{report.description}</p>
+                    <div className="mt-2 flex gap-4 text-sm">
+                      <span>Severity: {report.severity}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
-
-      {/* Display Recent Submissions */}
-      <Card className="mt-8">
-        <CardHeader>
-          <CardTitle>Recent Submissions</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {submittedReports.slice(0, 5).map((report, index) => (
-              <div key={index} className="border-b pb-4 last:border-0">
-                <div className="flex justify-between items-start mb-2">
-                  <p className="font-medium">{report.location}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {formatTimestamp(report.timestamp)}
-                  </p>
-                </div>
-                <p className="text-sm text-muted-foreground">{report.description}</p>
-                <div className="mt-2 flex gap-4 text-sm">
-                  <span>Vehicles: {report.vehiclesInvolved}</span>
-                  <span>Injuries: {report.injuryCount}</span>
-                  {report.medicalAssistance && (
-                    <span className="text-red-500">Medical Assistance Required</span>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 }

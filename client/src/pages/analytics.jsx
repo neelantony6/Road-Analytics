@@ -3,8 +3,6 @@ import { Card } from "@/components/ui/card";
 import { TrendingDown, TrendingUp } from "lucide-react";
 import RoadAccidentGraph from "@/components/charts/road-accident-graph";
 import StateComparison from "@/components/charts/state-comparison";
-import { firebaseService } from "@/lib/firebase";
-import { useQuery } from "@tanstack/react-query";
 
 // I collected this data from government reports to analyze road safety trends
 const mockData = {
@@ -42,20 +40,12 @@ const mockData = {
   }
 };
 
-// Fetch submitted reports from Firebase
-function useSubmittedReports() {
-  return useQuery({
-    queryKey: ['submittedReports'],
-    queryFn: () => firebaseService.getAccidentReports()
-  });
-}
-
 // My custom analysis function to understand accident trends
 function calculateTrends(data) {
   const states = Object.keys(data.yearly_data);
   const years = ["2016", "2017", "2018", "2019"];
 
-  // Calculate overall trend to see if we're making progress
+  // Calculate overall trend
   const totalsByYear = years.map(year =>
     states.reduce((sum, state) => sum + data.yearly_data[state][year], 0)
   );
@@ -84,16 +74,10 @@ function calculateTrends(data) {
 function AnalyticsView() {
   const [selectedYear, setSelectedYear] = useState("2019");
   const trends = calculateTrends(mockData);
-  const { data: submittedReports = [] } = useSubmittedReports();
-
-  // Calculate statistics from submitted reports
-  const recentSubmissions = submittedReports.slice(0, 5);
-  const totalInjuries = submittedReports.reduce((sum, report) => sum + report.injuryCount, 0);
-  const medicalAssistanceCases = submittedReports.filter(report => report.medicalAssistance).length;
 
   return (
     <div className="container mx-auto px-4 py-8 space-y-8">
-      {/* Header with my personal touch */}
+      {/* Header */}
       <div className="mb-8">
         <h1 className="text-4xl font-bold mb-3 bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
           Road Safety Analytics Dashboard [AR3]
@@ -146,32 +130,6 @@ function AnalyticsView() {
           </div>
         </Card>
       </div>
-
-      {/* Recent Submissions */}
-      <Card className="p-6">
-        <h3 className="text-xl font-semibold mb-4">Recent Accident Reports</h3>
-        <div className="space-y-4">
-          {recentSubmissions.map((report, index) => (
-            <div key={index} className="border-b pb-4 last:border-0">
-              <p className="font-medium">{report.location}</p>
-              <p className="text-sm text-muted-foreground">{report.description}</p>
-              <div className="mt-2 flex gap-4 text-sm">
-                <span>Vehicles: {report.vehiclesInvolved}</span>
-                <span>Injuries: {report.injuryCount}</span>
-                {report.medicalAssistance && (
-                  <span className="text-red-500">Medical Assistance Required</span>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-        <div className="mt-4 pt-4 border-t">
-          <p className="text-sm text-muted-foreground">
-            Total Reports: {submittedReports.length} | Total Injuries: {totalInjuries} | 
-            Medical Assistance Cases: {medicalAssistanceCases}
-          </p>
-        </div>
-      </Card>
 
       {/* Trend Chart */}
       <div className="grid gap-6">
