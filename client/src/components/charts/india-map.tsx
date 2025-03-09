@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo } from "react";
 import {
   ComposableMap,
   Geographies,
@@ -6,12 +6,9 @@ import {
   ZoomableGroup
 } from "react-simple-maps";
 import { scaleLinear } from "d3-scale";
-import { useTheme } from "@/components/theme-provider";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle } from "lucide-react";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Card } from "@/components/ui/card";
 
-// GeoJSON for India map with state boundaries
+// I'm using a simpler GeoJSON for India map
 const INDIA_TOPO_JSON = "https://raw.githubusercontent.com/deldersveld/topojson/master/countries/india/india-states.json";
 
 interface IndiaMapProps {
@@ -26,22 +23,17 @@ interface IndiaMapProps {
 }
 
 const IndiaMap: React.FC<IndiaMapProps> = ({ data, selectedYear }) => {
-  const { theme } = useTheme();
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
+  // Create color scale based on accident data
   const colorScale = useMemo(() => {
     const accidentValues = Object.values(data.yearly_data)
       .map(stateData => stateData[selectedYear]);
 
     return scaleLinear<string>()
       .domain([Math.min(...accidentValues), Math.max(...accidentValues)])
-      .range([
-        theme === "dark" ? "#1f293766" : "#dbeafe66",  // Much lighter with transparency
-        theme === "dark" ? "#3b82f6cc" : "#1e40afcc"   // Less intense with transparency
-      ]);
-  }, [data, selectedYear, theme]);
+      .range(["#e5e7eb", "#1e40af"]);
+  }, [data, selectedYear]);
 
+  // Helper to get state data
   const getStateAccidents = (stateName: string) => {
     const stateData = data.yearly_data[stateName] || 
                      data.yearly_data[stateName.toUpperCase()] ||
@@ -49,56 +41,19 @@ const IndiaMap: React.FC<IndiaMapProps> = ({ data, selectedYear }) => {
     return stateData ? stateData[selectedYear] : 0;
   };
 
-  if (error) {
-    return (
-      <Alert variant="destructive">
-        <AlertCircle className="h-4 w-4" />
-        <AlertDescription>
-          {error}
-        </AlertDescription>
-      </Alert>
-    );
-  }
-
   return (
-    <div className="rounded-lg overflow-hidden bg-card border shadow-sm">
-      <div className="p-4 border-b">
-        <h3 className="font-semibold">Geographic Distribution of Road Accidents</h3>
-        <p className="text-sm text-muted-foreground">State-wise road accident data visualization for {selectedYear}</p>
-      </div>
-
-      <div className="relative w-full h-[500px] bg-background/50">
-        {isLoading && (
-          <div className="absolute inset-0 flex items-center justify-center">
-            <Skeleton className="w-full h-full" />
-          </div>
-        )}
-
+    <Card className="p-4">
+      <h3 className="text-lg font-semibold mb-4">Geographic Distribution ({selectedYear})</h3>
+      <div style={{ width: "100%", height: "400px" }}>
         <ComposableMap
           projection="geoMercator"
           projectionConfig={{
             scale: 1000,
-            center: [78.9629, 22.5937]
+            center: [78.9629, 22.5937] // Centered on India
           }}
-          style={{
-            width: "100%",
-            height: "100%",
-            background: theme === "dark" ? "#0f172a" : "#ffffff"
-          }}
-          onError={(error) => {
-            console.error('Map loading error:', error);
-            setError('Failed to load the map. Please try again later.');
-          }}
-          onLoad={() => setIsLoading(false)}
         >
           <ZoomableGroup>
-            <Geographies 
-              geography={INDIA_TOPO_JSON}
-              onError={(error) => {
-                console.error('GeoJSON loading error:', error);
-                setError('Failed to load geographical data. Please try again later.');
-              }}
-            >
+            <Geographies geography={INDIA_TOPO_JSON}>
               {({ geographies }) =>
                 geographies.map(geo => {
                   const stateName = geo.properties.NAME_1;
@@ -107,21 +62,19 @@ const IndiaMap: React.FC<IndiaMapProps> = ({ data, selectedYear }) => {
                     <Geography
                       key={geo.rsmKey}
                       geography={geo}
-                      fill={accidents ? colorScale(accidents) : theme === "dark" ? "#1f293733" : "#f3f4f633"}
-                      stroke={theme === "dark" ? "#1f293766" : "#e5e7eb66"}
+                      fill={accidents ? colorScale(accidents) : "#e5e7eb"}
+                      stroke="#ffffff"
                       strokeWidth={0.5}
                       style={{
                         default: {
-                          outline: "none",
-                          transition: "all 250ms"
+                          outline: "none"
                         },
                         hover: {
-                          fill: theme === "dark" ? "#3b82f6aa" : "#2563ebaa",
-                          cursor: "pointer",
-                          transition: "all 250ms"
+                          fill: "#3b82f6",
+                          outline: "none"
                         }
                       }}
-                      aria-label={`${stateName}: ${accidents.toLocaleString()} accidents`}
+                      title={`${stateName}: ${accidents.toLocaleString()} accidents`}
                     />
                   );
                 })
@@ -129,26 +82,20 @@ const IndiaMap: React.FC<IndiaMapProps> = ({ data, selectedYear }) => {
             </Geographies>
           </ZoomableGroup>
         </ComposableMap>
+      </div>
 
-        <div className="absolute bottom-4 left-4 bg-background/80 backdrop-blur-sm p-3 rounded-lg shadow-sm border">
-          <p className="text-sm font-medium mb-2">Accidents in {selectedYear}</p>
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-1">
-              <div className="w-4 h-4 rounded border" style={{ 
-                backgroundColor: theme === "dark" ? "#1f293766" : "#dbeafe66"
-              }} />
-              <span className="text-xs">Low</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <div className="w-4 h-4 rounded border" style={{ 
-                backgroundColor: theme === "dark" ? "#3b82f6cc" : "#1e40afcc"
-              }} />
-              <span className="text-xs">High</span>
-            </div>
-          </div>
+      {/* Legend */}
+      <div className="mt-4 flex items-center gap-4 justify-center">
+        <div className="flex items-center gap-2">
+          <div className="w-4 h-4" style={{ backgroundColor: "#e5e7eb" }} />
+          <span className="text-sm">Low</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-4 h-4" style={{ backgroundColor: "#1e40af" }} />
+          <span className="text-sm">High</span>
         </div>
       </div>
-    </div>
+    </Card>
   );
 };
 

@@ -1,7 +1,9 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { TrendingDown, TrendingUp } from "lucide-react";
 import RoadAccidentGraph from "@/components/charts/road-accident-graph";
+import IndiaMap from "@/components/charts/india-map";
+import { Select } from "@/components/ui/select";
 
 // I collected this data from government reports to analyze road safety trends
 const mockData = {
@@ -71,6 +73,7 @@ function calculateTrends(data) {
 }
 
 function AnalyticsView() {
+  const [selectedYear, setSelectedYear] = useState("2019");
   const trends = calculateTrends(mockData);
 
   return (
@@ -127,6 +130,22 @@ function AnalyticsView() {
             </p>
           </div>
         </Card>
+      </div>
+
+      {/* Map View */}
+      <div className="grid gap-6">
+        <div className="flex justify-end mb-4">
+          <select 
+            value={selectedYear} 
+            onChange={(e) => setSelectedYear(e.target.value)}
+            className="px-4 py-2 border rounded-md"
+          >
+            {["2016", "2017", "2018", "2019"].map(year => (
+              <option key={year} value={year}>{year}</option>
+            ))}
+          </select>
+        </div>
+        <IndiaMap data={mockData} selectedYear={selectedYear} />
       </div>
 
       {/* Charts */}
