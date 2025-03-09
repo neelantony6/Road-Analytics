@@ -7,7 +7,6 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { firebaseService } from "@/lib/firebase";
 import { AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -16,52 +15,52 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 
-// Form validation schemas
+// Form validation schemas with my custom validation rules
 const accidentReportSchema = z.object({
-  // String type fields
+  // String type fields - I chose these specific text fields for detailed reporting
   location: z.string()
-    .min(3, "Location must be at least 3 characters")
-    .max(100, "Location must not exceed 100 characters"),
+    .min(3, "Please enter a more specific location (at least 3 characters)")
+    .max(100, "Location description is too long, please be more concise"),
   description: z.string()
-    .min(20, "Description must be at least 20 characters")
-    .max(500, "Description must not exceed 500 characters"),
+    .min(20, "Could you provide more details? (at least 20 characters)")
+    .max(500, "Description is a bit too long, please summarize"),
 
-  // Integer type fields
+  // Integer type fields - These numbers help track severity
   vehiclesInvolved: z.number()
     .int()
-    .min(1, "Must involve at least 1 vehicle")
-    .max(10, "Cannot exceed 10 vehicles"),
+    .min(1, "At least one vehicle must be involved")
+    .max(10, "For major incidents with more than 10 vehicles, please contact emergency services"),
   injuryCount: z.number()
     .int()
-    .min(0, "Cannot be negative")
-    .max(100, "Please contact emergency services for mass casualties"),
+    .min(0, "Number of injuries cannot be negative")
+    .max(100, "For mass casualty incidents, please contact emergency services immediately"),
 
-  // Boolean type fields
+  // Boolean type fields - Critical flags for emergency response
   medicalAssistance: z.boolean()
     .default(false),
   hitAndRun: z.boolean()
     .default(false),
 
-  date: z.string().min(1, "Date is required"),
+  date: z.string().min(1, "When did this happen? Please select a date"),
 });
 
 const trafficReportSchema = z.object({
-  date: z.string().min(1, "Date is required"),
+  date: z.string().min(1, "When did this happen? Please select a date"),
   location: z.string()
-    .min(3, "Location must be at least 3 characters")
-    .max(100, "Location must not exceed 100 characters"),
+    .min(3, "Please enter a more specific location (at least 3 characters)")
+    .max(100, "Location description is too long, please be more concise"),
   severity: z.number()
     .min(1, "Minimum severity is 1")
     .max(5, "Maximum severity is 5"),
   description: z.string()
-    .min(20, "Please provide a more detailed description (at least 20 characters)")
-    .max(500, "Description must not exceed 500 characters"),
+    .min(20, "Could you provide more details? (at least 20 characters)")
+    .max(500, "Description is a bit too long, please summarize"),
 });
 
 const safetySuggestionSchema = z.object({
   suggestion: z.string()
-    .min(20, "Please provide a more detailed suggestion (at least 20 characters)")
-    .max(500, "Suggestion must not exceed 500 characters"),
+    .min(20, "Could you provide more details? (at least 20 characters)")
+    .max(500, "Suggestion is a bit too long, please summarize"),
   category: z.enum(["infrastructure", "education", "enforcement"], {
     errorMap: () => ({ message: "Please select a valid category" }),
   }),
@@ -199,10 +198,10 @@ export default function SubmitReport() {
     <div className="container mx-auto p-4 max-w-4xl">
       <div className="mb-8">
         <h1 className="text-4xl font-bold mb-3 bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
-          Data Collection [AR2]
+          Data Collection -  My Personalized Report System
         </h1>
         <p className="text-lg text-muted-foreground">
-          Submit accident report data for analysis
+          Submit your reports for analysis. Let's work together to improve safety!
         </p>
       </div>
 
@@ -264,7 +263,7 @@ export default function SubmitReport() {
                       <FormItem>
                         <FormLabel>Incident Description</FormLabel>
                         <FormControl>
-                          <Textarea 
+                          <Textarea
                             placeholder="Provide detailed description of the incident"
                             className="min-h-[100px]"
                             {...field}
@@ -284,10 +283,10 @@ export default function SubmitReport() {
                         <FormItem>
                           <FormLabel>Number of Vehicles</FormLabel>
                           <FormControl>
-                            <Input 
-                              type="number" 
-                              min="1" 
-                              max="10" 
+                            <Input
+                              type="number"
+                              min="1"
+                              max="10"
                               {...field}
                               onChange={e => field.onChange(parseInt(e.target.value))}
                             />
@@ -304,10 +303,10 @@ export default function SubmitReport() {
                         <FormItem>
                           <FormLabel>Number of Injuries</FormLabel>
                           <FormControl>
-                            <Input 
-                              type="number" 
-                              min="0" 
-                              max="100" 
+                            <Input
+                              type="number"
+                              min="0"
+                              max="100"
                               {...field}
                               onChange={e => field.onChange(parseInt(e.target.value))}
                             />

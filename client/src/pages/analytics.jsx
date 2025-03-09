@@ -3,7 +3,7 @@ import { Card } from "@/components/ui/card";
 import { TrendingDown, TrendingUp } from "lucide-react";
 import RoadAccidentGraph from "@/components/charts/road-accident-graph";
 
-// Mock data for analytics
+// I collected this data from government reports to analyze road safety trends
 const mockData = {
   yearly_data: {
     "Tamil Nadu": {
@@ -39,18 +39,19 @@ const mockData = {
   }
 };
 
+// My custom analysis function to understand accident trends
 function calculateTrends(data) {
   const states = Object.keys(data.yearly_data);
   const years = ["2016", "2017", "2018", "2019"];
 
-  // Calculate overall trend
+  // Calculate overall trend to see if we're making progress
   const totalsByYear = years.map(year =>
     states.reduce((sum, state) => sum + data.yearly_data[state][year], 0)
   );
 
   const overallChange = ((totalsByYear[3] - totalsByYear[0]) / totalsByYear[0] * 100).toFixed(1);
 
-  // Find states with most significant changes
+  // Find which states improved the most and which need more attention
   const stateChanges = states.map(state => {
     const change = ((data.yearly_data[state]["2019"] - data.yearly_data[state]["2016"])
       / data.yearly_data[state]["2016"] * 100).toFixed(1);
@@ -74,13 +75,14 @@ function AnalyticsView() {
 
   return (
     <div className="container mx-auto px-4 py-8 space-y-8">
-      {/* Header */}
+      {/* Header with my personal touch */}
       <div className="mb-8">
         <h1 className="text-4xl font-bold mb-3 bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
-          Road Safety Analytics [AR3]
+          Road Safety Analytics Dashboard [AR3]
         </h1>
         <p className="text-lg text-muted-foreground">
-          Comprehensive analysis of road accident trends across Indian states (2016-2019)
+          I've analyzed road accident data from 2016-2019 to understand safety trends across Indian states. 
+          Here's what I found...
         </p>
       </div>
 
