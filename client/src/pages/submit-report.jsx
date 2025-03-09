@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
+import { firebaseService } from "@/lib/firebase";
 
 // Form validation schemas
 const accidentReportSchema = z.object({
@@ -48,39 +49,18 @@ const trafficReportSchema = z.object({
     .max(500, "Description must not exceed 500 characters"),
 });
 
-// API functions
-async function submitAccidentReport(data) {
-  const response = await fetch('/api/accidents', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(data),
+// Helper function to format timestamp
+function formatTimestamp(timestamp) {
+  if (!timestamp) return '';
+  const date = new Date(timestamp);
+  return date.toLocaleString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true
   });
-
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || 'Failed to submit accident report');
-  }
-
-  return response.json();
-}
-
-async function submitTrafficReport(data) {
-  const response = await fetch('/api/reports', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(data),
-  });
-
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || 'Failed to submit traffic report');
-  }
-
-  return response.json();
 }
 
 export default function SubmitReport() {
@@ -89,14 +69,8 @@ export default function SubmitReport() {
 
   // Query for fetching submitted reports
   const { data: submittedReports = [] } = useQuery({
-    queryKey: ['accidentReports'],
-    queryFn: async () => {
-      const response = await fetch('/api/accidents');
-      if (!response.ok) {
-        throw new Error('Failed to fetch accident reports');
-      }
-      return response.json();
-    }
+    queryKey: ['submittedReports'],
+    queryFn: () => firebaseService.getAccidentReports()
   });
 
   // Form setup
@@ -119,7 +93,7 @@ export default function SubmitReport() {
 
   // Mutations
   const accidentMutation = useMutation({
-    mutationFn: submitAccidentReport,
+    mutationFn: firebaseService.submitAccidentReport,
     onSuccess: () => {
       toast({
         title: "Report Submitted",
@@ -137,7 +111,7 @@ export default function SubmitReport() {
   });
 
   const trafficMutation = useMutation({
-    mutationFn: submitTrafficReport,
+    mutationFn: firebaseService.submitTrafficReport,
     onSuccess: () => {
       toast({
         title: "Report Submitted",
@@ -382,10 +356,10 @@ export default function SubmitReport() {
                       <FormItem>
                         <FormLabel>Severity (1-5)</FormLabel>
                         <FormControl>
-                          <Input 
-                            type="number" 
-                            min="1" 
-                            max="5" 
+                          <Input
+                            type="number"
+                            min="1"
+                            max="5"
                             onChange={(e) => field.onChange(Number(e.target.value))}
                             value={field.value}
                           />
@@ -414,7 +388,12 @@ export default function SubmitReport() {
           <div className="space-y-4">
             {submittedReports.slice(0, 5).map((report, index) => (
               <div key={index} className="border-b pb-4 last:border-0">
-                <p className="font-medium">{report.location}</p>
+                <div className="flex justify-between items-start mb-2">
+                  <p className="font-medium">{report.location}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {formatTimestamp(report.timestamp)}
+                  </p>
+                </div>
                 <p className="text-sm text-muted-foreground">{report.description}</p>
                 <div className="mt-2 flex gap-4 text-sm">
                   <span>Vehicles: {report.vehiclesInvolved}</span>

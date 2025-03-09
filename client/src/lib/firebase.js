@@ -6,14 +6,13 @@ import { getDatabase, ref, push, get } from "firebase/database";
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain: `${import.meta.env.VITE_FIREBASE_PROJECT_ID}.firebaseapp.com`,
-  databaseURL: import.meta.env.VITE_FIREBASE_DATABASE_URL,
+  databaseURL: "https://alt-coursework-default-rtdb.europe-west1.firebasedatabase.app",
   projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
   appId: import.meta.env.VITE_FIREBASE_APP_ID
 };
 
 // Debug log to check URL format (without exposing the actual URL)
-console.log('Initializing Firebase with database URL pattern:', 
-  firebaseConfig.databaseURL?.includes('firebaseio.com') ? 'Valid URL pattern' : 'Invalid URL pattern');
+console.log('Initializing Firebase with database URL:', firebaseConfig.databaseURL);
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
@@ -84,13 +83,13 @@ export const firebaseService = {
   // Submit accident report
   async submitAccidentReport(data) {
     try {
-      console.log('Submitting accident report:', data); // Debug log
+      console.log('Submitting accident report:', data);
       const reportsRef = ref(db, 'accident_reports');
       const result = await push(reportsRef, {
         ...data,
         timestamp: new Date().toISOString()
       });
-      console.log('Successfully submitted report:', result.key); // Debug log
+      console.log('Successfully submitted report:', result.key);
       return true;
     } catch (error) {
       console.error('Error submitting accident report:', error);
@@ -101,15 +100,15 @@ export const firebaseService = {
   // Get all accident reports
   async getAccidentReports() {
     try {
-      console.log('Fetching accident reports'); // Debug log
+      console.log('Fetching accident reports');
       const reportsRef = ref(db, 'accident_reports');
       const snapshot = await get(reportsRef);
       if (snapshot.exists()) {
         const reports = Object.values(snapshot.val());
-        console.log('Retrieved reports:', reports.length); // Debug log
+        console.log('Retrieved reports:', reports.length);
         return reports;
       }
-      console.log('No reports found'); // Debug log
+      console.log('No reports found');
       return [];
     } catch (error) {
       console.error('Error fetching accident reports:', error);
@@ -120,13 +119,13 @@ export const firebaseService = {
   // Submit traffic report
   async submitTrafficReport(data) {
     try {
-      console.log('Submitting traffic report:', data); // Debug log
+      console.log('Submitting traffic report:', data);
       const reportsRef = ref(db, 'traffic_reports');
       const result = await push(reportsRef, {
         ...data,
         timestamp: new Date().toISOString()
       });
-      console.log('Successfully submitted traffic report:', result.key); // Debug log
+      console.log('Successfully submitted traffic report:', result.key);
       return true;
     } catch (error) {
       console.error('Error submitting traffic report:', error);
@@ -148,7 +147,7 @@ export const firebaseService = {
       throw new Error('Failed to fetch traffic reports. Please try again.');
     }
   },
-    // Submit safety suggestion
+  // Submit safety suggestion
   async submitSafetySuggestion(data) {
     try {
       const suggestionsRef = ref(db, 'safety_suggestions');
