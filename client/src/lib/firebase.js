@@ -1,13 +1,12 @@
 // Firebase configuration and service
 import { initializeApp } from "firebase/app";
-import { getDatabase, ref, push, get, query, orderByChild } from "firebase/database";
+import { getDatabase, ref, push, get } from "firebase/database";
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain: `${import.meta.env.VITE_FIREBASE_PROJECT_ID}.firebaseapp.com`,
-  databaseURL: "https://alt-coursework-default-rtdb.europe-west1.firebasedatabase.app",
+  databaseURL: import.meta.env.VITE_FIREBASE_DATABASE_URL,
   projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: `${import.meta.env.VITE_FIREBASE_PROJECT_ID}.appspot.com`,
   appId: import.meta.env.VITE_FIREBASE_APP_ID
 };
 
@@ -80,45 +79,47 @@ export const firebaseService = {
   // Submit accident report
   async submitAccidentReport(data) {
     try {
+      console.log('Submitting accident report:', data); // Debug log
       const reportsRef = ref(db, 'accident_reports');
-      await push(reportsRef, {
-        ...data,
-        timestamp: new Date().toISOString()
-      });
+      const result = await push(reportsRef, data);
+      console.log('Successfully submitted report:', result.key); // Debug log
       return true;
     } catch (error) {
       console.error('Error submitting accident report:', error);
-      throw error;
+      throw new Error('Failed to submit accident report. Please try again.');
     }
   },
 
   // Get all accident reports
   async getAccidentReports() {
     try {
+      console.log('Fetching accident reports'); // Debug log
       const reportsRef = ref(db, 'accident_reports');
       const snapshot = await get(reportsRef);
       if (snapshot.exists()) {
-        return Object.values(snapshot.val());
+        const reports = Object.values(snapshot.val());
+        console.log('Retrieved reports:', reports.length); // Debug log
+        return reports;
       }
+      console.log('No reports found'); // Debug log
       return [];
     } catch (error) {
       console.error('Error fetching accident reports:', error);
-      throw error;
+      throw new Error('Failed to fetch accident reports. Please try again.');
     }
   },
 
   // Submit traffic report
   async submitTrafficReport(data) {
     try {
+      console.log('Submitting traffic report:', data); // Debug log
       const reportsRef = ref(db, 'traffic_reports');
-      await push(reportsRef, {
-        ...data,
-        timestamp: new Date().toISOString()
-      });
+      const result = await push(reportsRef, data);
+      console.log('Successfully submitted traffic report:', result.key); // Debug log
       return true;
     } catch (error) {
       console.error('Error submitting traffic report:', error);
-      throw error;
+      throw new Error('Failed to submit traffic report. Please try again.');
     }
   },
 

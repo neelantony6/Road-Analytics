@@ -1,10 +1,41 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertTrafficReportSchema, insertSafetySuggestionSchema, insertTrafficConditionSchema } from "@shared/schema";
+import { 
+  insertRoadAccidentSchema, 
+  insertTrafficReportSchema, 
+  insertSafetySuggestionSchema, 
+  insertTrafficConditionSchema 
+} from "@shared/schema";
 import { ZodError } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Road Accidents
+  app.post("/api/accidents", async (req, res) => {
+    try {
+      const validatedData = insertRoadAccidentSchema.parse(req.body);
+      const report = await storage.createRoadAccident(validatedData);
+      res.status(201).json(report);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        res.status(400).json({ message: "Invalid accident report data", errors: error.errors });
+      } else {
+        console.error('Error creating accident report:', error);
+        res.status(500).json({ message: "Failed to create accident report" });
+      }
+    }
+  });
+
+  app.get("/api/accidents", async (req, res) => {
+    try {
+      const reports = await storage.getRoadAccidents();
+      res.json(reports);
+    } catch (error) {
+      console.error('Error fetching accident reports:', error);
+      res.status(500).json({ message: "Failed to fetch accident reports" });
+    }
+  });
+
   // Traffic Reports
   app.post("/api/reports", async (req, res) => {
     try {
@@ -13,8 +44,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(201).json(report);
     } catch (error) {
       if (error instanceof ZodError) {
-        res.status(400).json({ message: "Invalid report data", errors: error.errors });
+        res.status(400).json({ message: "Invalid traffic report data", errors: error.errors });
       } else {
+        console.error('Error creating traffic report:', error);
         res.status(500).json({ message: "Failed to create report" });
       }
     }
@@ -25,6 +57,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const reports = await storage.getTrafficReports();
       res.json(reports);
     } catch (error) {
+      console.error('Error fetching traffic reports:', error);
       res.status(500).json({ message: "Failed to fetch reports" });
     }
   });
@@ -39,6 +72,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (error instanceof ZodError) {
         res.status(400).json({ message: "Invalid suggestion data", errors: error.errors });
       } else {
+        console.error('Error creating suggestion:', error);
         res.status(500).json({ message: "Failed to create suggestion" });
       }
     }
@@ -49,6 +83,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const suggestions = await storage.getSafetySuggestions();
       res.json(suggestions);
     } catch (error) {
+      console.error('Error fetching suggestions:', error);
       res.status(500).json({ message: "Failed to fetch suggestions" });
     }
   });
@@ -58,6 +93,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const suggestion = await storage.upvoteSuggestion(parseInt(req.params.id));
       res.json(suggestion);
     } catch (error) {
+      console.error('Error upvoting suggestion:', error);
       res.status(500).json({ message: "Failed to upvote suggestion" });
     }
   });
@@ -72,6 +108,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (error instanceof ZodError) {
         res.status(400).json({ message: "Invalid condition data", errors: error.errors });
       } else {
+        console.error('Error creating condition:', error);
         res.status(500).json({ message: "Failed to create condition" });
       }
     }
@@ -82,6 +119,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const conditions = await storage.getTrafficConditions();
       res.json(conditions);
     } catch (error) {
+      console.error('Error fetching conditions:', error);
       res.status(500).json({ message: "Failed to fetch conditions" });
     }
   });

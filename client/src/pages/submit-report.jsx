@@ -7,74 +7,84 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { firebaseService } from "@/lib/firebase";
-import { AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 
-// Form validation schemas with my custom validation rules
+// Form validation schemas
 const accidentReportSchema = z.object({
-  // String type fields - I chose these specific text fields for detailed reporting
   location: z.string()
-    .min(3, "Please enter a more specific location (at least 3 characters)")
-    .max(100, "Location description is too long, please be more concise"),
+    .min(3, "Please enter a more specific location")
+    .max(100, "Location must not exceed 100 characters"),
   description: z.string()
-    .min(20, "Could you provide more details? (at least 20 characters)")
-    .max(500, "Description is a bit too long, please summarize"),
-
-  // Integer type fields - These numbers help track severity
+    .min(20, "Please provide more details")
+    .max(500, "Description must not exceed 500 characters"),
   vehiclesInvolved: z.number()
     .int()
     .min(1, "At least one vehicle must be involved")
-    .max(10, "For major incidents with more than 10 vehicles, please contact emergency services"),
+    .max(10, "For major incidents, contact emergency services"),
   injuryCount: z.number()
     .int()
-    .min(0, "Number of injuries cannot be negative")
-    .max(100, "For mass casualty incidents, please contact emergency services immediately"),
-
-  // Boolean type fields - Critical flags for emergency response
-  medicalAssistance: z.boolean()
-    .default(false),
-  hitAndRun: z.boolean()
-    .default(false),
-
-  date: z.string().min(1, "When did this happen? Please select a date"),
+    .min(0, "Cannot be negative")
+    .max(100, "For mass casualties, contact emergency services"),
+  medicalAssistance: z.boolean().default(false),
+  hitAndRun: z.boolean().default(false),
+  date: z.string().min(1, "Date is required"),
 });
 
 const trafficReportSchema = z.object({
-  date: z.string().min(1, "When did this happen? Please select a date"),
+  date: z.string().min(1, "Date is required"),
   location: z.string()
-    .min(3, "Please enter a more specific location (at least 3 characters)")
-    .max(100, "Location description is too long, please be more concise"),
+    .min(3, "Location must be at least 3 characters")
+    .max(100, "Location must not exceed 100 characters"),
   severity: z.number()
     .min(1, "Minimum severity is 1")
     .max(5, "Maximum severity is 5"),
   description: z.string()
-    .min(20, "Could you provide more details? (at least 20 characters)")
-    .max(500, "Description is a bit too long, please summarize"),
+    .min(20, "Please provide more details")
+    .max(500, "Description must not exceed 500 characters"),
 });
 
-const safetySuggestionSchema = z.object({
-  suggestion: z.string()
-    .min(20, "Could you provide more details? (at least 20 characters)")
-    .max(500, "Suggestion is a bit too long, please summarize"),
-  category: z.enum(["infrastructure", "education", "enforcement"], {
-    errorMap: () => ({ message: "Please select a valid category" }),
-  }),
-});
+async function submitAccidentReport(data) {
+  const response = await fetch('/api/accidents', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || 'Failed to submit accident report');
+  }
+
+  return response.json();
+}
+
+async function submitTrafficReport(data) {
+  const response = await fetch('/api/reports', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || 'Failed to submit traffic report');
+  }
+
+  return response.json();
+}
 
 export default function SubmitReport() {
   const { toast } = useToast();
   const [error] = useState(null);
-
-  // Query for fetching submitted reports
-  const { data: submittedReports = [] } = useQuery({
-    queryKey: ['accidentReports'],
-    queryFn: firebaseService.getAccidentReports
-  });
 
   // Form setup
   const accidentForm = useForm({
@@ -94,13 +104,9 @@ export default function SubmitReport() {
     },
   });
 
-  const suggestionForm = useForm({
-    resolver: zodResolver(safetySuggestionSchema),
-  });
-
-  // Mutations for handling form submissions
+  // Mutations
   const accidentMutation = useMutation({
-    mutationFn: firebaseService.submitAccidentReport,
+    mutationFn: submitAccidentReport,
     onSuccess: () => {
       toast({
         title: "Report Submitted",
@@ -117,32 +123,274 @@ export default function SubmitReport() {
     }
   });
 
-  // Analysis helpers - JavaScript functions for data processing
-  const getAverageInjuries = () => {
-    if (submittedReports.length === 0) return 0;
-    const total = submittedReports.reduce((sum, report) => sum + report.injuryCount, 0);
-    return (total / submittedReports.length).toFixed(1);
-  };
+  const trafficMutation = useMutation({
+    mutationFn: submitTrafficReport,
+    onSuccess: () => {
+      toast({
+        title: "Report Submitted",
+        description: "Your traffic report has been submitted successfully.",
+      });
+      trafficForm.reset();
+    },
+    onError: (error) => {
+      toast({
+        title: "Submission Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  });
 
-  const getMedicalAssistancePercentage = () => {
-    if (submittedReports.length === 0) return 0;
-    const medicalCases = submittedReports.filter(report => report.medicalAssistance).length;
-    return ((medicalCases / submittedReports.length) * 100).toFixed(1);
-  };
+  return (
+    <div className="container mx-auto p-4 max-w-4xl">
+      <div className="mb-8">
+        <h1 className="text-4xl font-bold mb-3 bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
+          Data Collection [AR2]
+        </h1>
+        <p className="text-lg text-muted-foreground">
+          Submit your reports to help improve road safety
+        </p>
+      </div>
 
-  const getAccidentTypeDistribution = () => {
-    return submittedReports.reduce((acc, report) => {
-      acc[report.accidentType] = (acc[report.accidentType] || 0) + 1;
-      return acc;
-    }, {});
-  };
+      {error && (
+        <Alert variant="destructive" className="mb-6">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
 
-  const getAverageVehiclesInvolved = () => {
-    if (submittedReports.length === 0) return 0;
-    const total = submittedReports.reduce((sum, report) => sum + report.vehiclesInvolved, 0);
-    return (total / submittedReports.length).toFixed(1);
-  };
+      <Tabs defaultValue="accidentReport" className="space-y-4">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="accidentReport">Accident Report</TabsTrigger>
+          <TabsTrigger value="trafficReport">Traffic Report</TabsTrigger>
+        </TabsList>
 
-  // Rest of the component JSX remains the same...
-  // (Component render code continues as before)
+        <TabsContent value="accidentReport">
+          <Card>
+            <CardHeader>
+              <CardTitle>Submit Accident Report</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Form {...accidentForm}>
+                <form onSubmit={accidentForm.handleSubmit(data => accidentMutation.mutate(data))} className="space-y-4">
+                  <FormField
+                    control={accidentForm.control}
+                    name="date"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Date of Incident</FormLabel>
+                        <FormControl>
+                          <Input type="date" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={accidentForm.control}
+                    name="location"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Location</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Enter incident location" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={accidentForm.control}
+                    name="description"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Description</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            placeholder="Provide detailed description"
+                            className="min-h-[100px]"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                      control={accidentForm.control}
+                      name="vehiclesInvolved"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Number of Vehicles</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              min="1"
+                              max="10"
+                              onChange={(e) => field.onChange(Number(e.target.value))}
+                              value={field.value}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={accidentForm.control}
+                      name="injuryCount"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Number of Injuries</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              min="0"
+                              max="100"
+                              onChange={(e) => field.onChange(Number(e.target.value))}
+                              value={field.value}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                      control={accidentForm.control}
+                      name="medicalAssistance"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-start space-x-3 space-y-0 p-4">
+                          <FormControl>
+                            <Checkbox
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormControl>
+                          <div className="space-y-1 leading-none">
+                            <FormLabel>Medical Assistance Required</FormLabel>
+                          </div>
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={accidentForm.control}
+                      name="hitAndRun"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-start space-x-3 space-y-0 p-4">
+                          <FormControl>
+                            <Checkbox
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormControl>
+                          <div className="space-y-1 leading-none">
+                            <FormLabel>Hit and Run Case</FormLabel>
+                          </div>
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <Button
+                    type="submit"
+                    className="w-full"
+                    disabled={accidentMutation.isPending}
+                  >
+                    {accidentMutation.isPending ? "Submitting..." : "Submit Report"}
+                  </Button>
+                </form>
+              </Form>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="trafficReport">
+          <Card>
+            <CardHeader>
+              <CardTitle>Submit Traffic Report</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Form {...trafficForm}>
+                <form onSubmit={trafficForm.handleSubmit(data => trafficMutation.mutate(data))} className="space-y-4">
+                  <FormField
+                    control={trafficForm.control}
+                    name="date"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Date of Incident</FormLabel>
+                        <FormControl>
+                          <Input type="date" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={trafficForm.control}
+                    name="location"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Location</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Enter incident location" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={trafficForm.control}
+                    name="description"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Description</FormLabel>
+                        <FormControl>
+                          <Textarea placeholder="Provide detailed description" className="min-h-[100px]" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={trafficForm.control}
+                    name="severity"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Severity (1-5)</FormLabel>
+                        <FormControl>
+                          <Input 
+                            type="number" 
+                            min="1" 
+                            max="5" 
+                            onChange={(e) => field.onChange(Number(e.target.value))}
+                            value={field.value}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <Button type="submit" className="w-full" disabled={trafficMutation.isPending}>
+                    {trafficMutation.isPending ? "Submitting..." : "Submit Report"}
+                  </Button>
+                </form>
+              </Form>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
 }

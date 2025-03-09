@@ -2,6 +2,7 @@ import { db } from "./db";
 import { eq } from "drizzle-orm";
 import {
   users, type User, type InsertUser,
+  roadAccidents, type RoadAccident, type InsertRoadAccident,
   trafficReports, type TrafficReport, type InsertTrafficReport,
   safetySuggestions, type SafetySuggestion, type InsertSafetySuggestion,
   trafficConditions, type TrafficCondition, type InsertTrafficCondition
@@ -12,6 +13,10 @@ export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
+
+  // Road Accident methods
+  createRoadAccident(report: InsertRoadAccident): Promise<RoadAccident>;
+  getRoadAccidents(): Promise<RoadAccident[]>;
 
   // Traffic Report methods
   createTrafficReport(report: InsertTrafficReport): Promise<TrafficReport>;
@@ -27,108 +32,70 @@ export interface IStorage {
   getTrafficConditions(): Promise<TrafficCondition[]>;
 }
 
-// Temporary in-memory storage implementation
-class MemoryStorage implements IStorage {
-  private users: User[] = [];
-  private trafficReports: TrafficReport[] = [];
-  private safetySuggestions: SafetySuggestion[] = [];
-  private trafficConditions: TrafficCondition[] = [];
-  private nextId = 1;
-
-  async getUser(id: number): Promise<User | undefined> {
-    return this.users.find(u => u.id === id);
-  }
-
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    return this.users.find(u => u.username === username);
-  }
-
-  async createUser(user: InsertUser): Promise<User> {
-    const newUser = { ...user, id: this.nextId++ } as User;
-    this.users.push(newUser);
-    return newUser;
-  }
-
-  async createTrafficReport(report: InsertTrafficReport): Promise<TrafficReport> {
-    const newReport = { ...report, id: this.nextId++ } as TrafficReport;
-    this.trafficReports.push(newReport);
-    return newReport;
-  }
-
-  async getTrafficReports(): Promise<TrafficReport[]> {
-    return this.trafficReports;
-  }
-
-  async createSafetySuggestion(suggestion: InsertSafetySuggestion): Promise<SafetySuggestion> {
-    const newSuggestion = { ...suggestion, id: this.nextId++, upvotes: 0 } as SafetySuggestion;
-    this.safetySuggestions.push(newSuggestion);
-    return newSuggestion;
-  }
-
-  async getSafetySuggestions(): Promise<SafetySuggestion[]> {
-    return this.safetySuggestions;
-  }
-
-  async upvoteSuggestion(id: number): Promise<SafetySuggestion> {
-    const suggestion = this.safetySuggestions.find(s => s.id === id);
-    if (!suggestion) throw new Error('Suggestion not found');
-    suggestion.upvotes = (suggestion.upvotes || 0) + 1;
-    return suggestion;
-  }
-
-  async createTrafficCondition(condition: InsertTrafficCondition): Promise<TrafficCondition> {
-    const newCondition = { ...condition, id: this.nextId++ } as TrafficCondition;
-    this.trafficConditions.push(newCondition);
-    return newCondition;
-  }
-
-  async getTrafficConditions(): Promise<TrafficCondition[]> {
-    return this.trafficConditions;
-  }
-}
-
 export class DatabaseStorage implements IStorage {
   // User methods
   async getUser(id: number): Promise<User | undefined> {
+    if (!db) throw new Error('Database not initialized');
     const [user] = await db.select().from(users).where(eq(users.id, id));
     return user;
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
+    if (!db) throw new Error('Database not initialized');
     const [user] = await db.select().from(users).where(eq(users.username, username));
     return user;
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
+    if (!db) throw new Error('Database not initialized');
     const [user] = await db.insert(users).values(insertUser).returning();
     return user;
   }
 
+  // Road Accident methods
+  async createRoadAccident(report: InsertRoadAccident): Promise<RoadAccident> {
+    if (!db) throw new Error('Database not initialized');
+    const [newReport] = await db.insert(roadAccidents).values(report).returning();
+    return newReport;
+  }
+
+  async getRoadAccidents(): Promise<RoadAccident[]> {
+    if (!db) throw new Error('Database not initialized');
+    return await db.select().from(roadAccidents).orderBy(roadAccidents.date);
+  }
+
   // Traffic Report methods
   async createTrafficReport(report: InsertTrafficReport): Promise<TrafficReport> {
+    if (!db) throw new Error('Database not initialized');
     const [newReport] = await db.insert(trafficReports).values(report).returning();
     return newReport;
   }
 
   async getTrafficReports(): Promise<TrafficReport[]> {
+    if (!db) throw new Error('Database not initialized');
     return await db.select().from(trafficReports).orderBy(trafficReports.date);
   }
 
   // Safety Suggestion methods
   async createSafetySuggestion(suggestion: InsertSafetySuggestion): Promise<SafetySuggestion> {
+    if (!db) throw new Error('Database not initialized');
     const [newSuggestion] = await db.insert(safetySuggestions).values(suggestion).returning();
     return newSuggestion;
   }
 
   async getSafetySuggestions(): Promise<SafetySuggestion[]> {
+    if (!db) throw new Error('Database not initialized');
     return await db.select().from(safetySuggestions).orderBy(safetySuggestions.upvotes);
   }
 
   async upvoteSuggestion(id: number): Promise<SafetySuggestion> {
-    // Use SQL expression for incrementing upvotes
+    if (!db) throw new Error('Database not initialized');
+    const [suggestion] = await db.select().from(safetySuggestions).where(eq(safetySuggestions.id, id));
+    if (!suggestion) throw new Error('Suggestion not found');
+
     const [updated] = await db
       .update(safetySuggestions)
-      .set({ upvotes: db.dynamic.ref(`${safetySuggestions.upvotes.name} + 1`) })
+      .set({ upvotes: suggestion.upvotes + 1 })
       .where(eq(safetySuggestions.id, id))
       .returning();
     return updated;
@@ -136,14 +103,16 @@ export class DatabaseStorage implements IStorage {
 
   // Traffic Condition methods
   async createTrafficCondition(condition: InsertTrafficCondition): Promise<TrafficCondition> {
+    if (!db) throw new Error('Database not initialized');
     const [newCondition] = await db.insert(trafficConditions).values(condition).returning();
     return newCondition;
   }
 
   async getTrafficConditions(): Promise<TrafficCondition[]> {
+    if (!db) throw new Error('Database not initialized');
     return await db.select().from(trafficConditions).orderBy(trafficConditions.createdAt);
   }
 }
 
-// Export an instance of MemoryStorage
-export const storage = new MemoryStorage();
+// Export an instance of DatabaseStorage
+export const storage = new DatabaseStorage();
