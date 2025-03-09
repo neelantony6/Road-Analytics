@@ -14,20 +14,34 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 
 // Form validation schemas
 const accidentReportSchema = z.object({
+  // String type fields
   location: z.string()
     .min(3, "Location must be at least 3 characters")
     .max(100, "Location must not exceed 100 characters"),
-  accidentType: z.enum(["collision", "pedestrian", "vehicle_failure"], {
-    required_error: "Please select an accident type",
-  }),
-  vehiclesInvolved: z.string()
-    .transform((val) => parseInt(val, 10))
-    .refine((num) => !isNaN(num) && num > 0 && num <= 10, {
-      message: "Number of vehicles must be between 1 and 10",
-    }),
+  description: z.string()
+    .min(20, "Description must be at least 20 characters")
+    .max(500, "Description must not exceed 500 characters"),
+
+  // Integer type fields
+  vehiclesInvolved: z.number()
+    .int()
+    .min(1, "Must involve at least 1 vehicle")
+    .max(10, "Cannot exceed 10 vehicles"),
+  injuryCount: z.number()
+    .int()
+    .min(0, "Cannot be negative")
+    .max(100, "Please contact emergency services for mass casualties"),
+
+  // Boolean type fields
+  medicalAssistance: z.boolean()
+    .default(false),
+  hitAndRun: z.boolean()
+    .default(false),
+
   date: z.string().min(1, "Date is required"),
 });
 
@@ -60,8 +74,11 @@ type SafetySuggestion = z.infer<typeof safetySuggestionSchema>;
 interface SubmittedReport {
   date: string;
   location: string;
-  accidentType: string;
+  description: string;
   vehiclesInvolved: number;
+  injuryCount: number;
+  medicalAssistance: boolean;
+  hitAndRun: boolean;
   timestamp: string;
 }
 
@@ -79,7 +96,10 @@ export default function SubmitReport() {
   const accidentForm = useForm<AccidentReport>({
     resolver: zodResolver(accidentReportSchema),
     defaultValues: {
-      vehiclesInvolved: "1",
+      vehiclesInvolved: 1,
+      injuryCount: 0,
+      medicalAssistance: false,
+      hitAndRun: false,
     },
   });
 
@@ -150,6 +170,18 @@ export default function SubmitReport() {
   });
 
   // Analysis helpers
+  const getAverageInjuries = () => {
+    if (submittedReports.length === 0) return 0;
+    const total = submittedReports.reduce((sum, report) => sum + report.injuryCount, 0);
+    return (total / submittedReports.length).toFixed(1);
+  };
+
+  const getMedicalAssistancePercentage = () => {
+    if (submittedReports.length === 0) return 0;
+    const medicalCases = submittedReports.filter(report => report.medicalAssistance).length;
+    return ((medicalCases / submittedReports.length) * 100).toFixed(1);
+  };
+
   const getAccidentTypeDistribution = () => {
     return submittedReports.reduce((acc: Record<string, number>, report) => {
       acc[report.accidentType] = (acc[report.accidentType] || 0) + 1;
@@ -196,6 +228,7 @@ export default function SubmitReport() {
             <CardContent>
               <Form {...accidentForm}>
                 <form onSubmit={accidentForm.handleSubmit(data => accidentMutation.mutate(data))} className="space-y-4">
+                  {/* String type fields */}
                   <FormField
                     control={accidentForm.control}
                     name="date"
@@ -226,40 +259,107 @@ export default function SubmitReport() {
 
                   <FormField
                     control={accidentForm.control}
-                    name="accidentType"
+                    name="description"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Accident Type</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select accident type" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="collision">Vehicle Collision</SelectItem>
-                            <SelectItem value="pedestrian">Pedestrian Involved</SelectItem>
-                            <SelectItem value="vehicle_failure">Vehicle Failure</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={accidentForm.control}
-                    name="vehiclesInvolved"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Number of Vehicles Involved</FormLabel>
+                        <FormLabel>Incident Description</FormLabel>
                         <FormControl>
-                          <Input type="number" min="1" max="10" {...field} />
+                          <Textarea 
+                            placeholder="Provide detailed description of the incident"
+                            className="min-h-[100px]"
+                            {...field}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
+
+                  {/* Integer type fields */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                      control={accidentForm.control}
+                      name="vehiclesInvolved"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Number of Vehicles</FormLabel>
+                          <FormControl>
+                            <Input 
+                              type="number" 
+                              min="1" 
+                              max="10" 
+                              {...field}
+                              onChange={e => field.onChange(parseInt(e.target.value))}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={accidentForm.control}
+                      name="injuryCount"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Number of Injuries</FormLabel>
+                          <FormControl>
+                            <Input 
+                              type="number" 
+                              min="0" 
+                              max="100" 
+                              {...field}
+                              onChange={e => field.onChange(parseInt(e.target.value))}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  {/* Boolean type fields */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                      control={accidentForm.control}
+                      name="medicalAssistance"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-start space-x-3 space-y-0 p-4">
+                          <FormControl>
+                            <Checkbox
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormControl>
+                          <div className="space-y-1 leading-none">
+                            <FormLabel>
+                              Medical Assistance Required
+                            </FormLabel>
+                          </div>
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={accidentForm.control}
+                      name="hitAndRun"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-start space-x-3 space-y-0 p-4">
+                          <FormControl>
+                            <Checkbox
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormControl>
+                          <div className="space-y-1 leading-none">
+                            <FormLabel>
+                              Hit and Run Case
+                            </FormLabel>
+                          </div>
+                        </FormItem>
+                      )}
+                    />
+                  </div>
 
                   <Button
                     type="submit"
@@ -285,9 +385,12 @@ export default function SubmitReport() {
                     <div className="grid grid-cols-2 gap-2 text-sm">
                       <p><strong>Date:</strong> {new Date(report.date).toLocaleDateString()}</p>
                       <p><strong>Location:</strong> {report.location}</p>
-                      <p><strong>Type:</strong> {report.accidentType.replace('_', ' ')}</p>
                       <p><strong>Vehicles:</strong> {report.vehiclesInvolved}</p>
+                      <p><strong>Injuries:</strong> {report.injuryCount}</p>
+                      <p><strong>Medical Assistance:</strong> {report.medicalAssistance ? "Yes" : "No"}</p>
+                      <p><strong>Hit & Run:</strong> {report.hitAndRun ? "Yes" : "No"}</p>
                     </div>
+                    <p className="mt-2 text-sm text-muted-foreground">{report.description}</p>
                   </div>
                 ))}
                 {submittedReports.length === 0 && (
@@ -493,6 +596,12 @@ export default function SubmitReport() {
                 </p>
                 <p className="text-sm text-muted-foreground">
                   Average Vehicles Involved: {getAverageVehiclesInvolved()}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Average Injuries per Incident: {getAverageInjuries()}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Medical Assistance Percentage: {getMedicalAssistancePercentage()}%
                 </p>
               </div>
             </div>
