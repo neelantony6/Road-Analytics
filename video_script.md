@@ -1,144 +1,175 @@
-# Road Safety Analytics Platform - My Video Script
+# Road Safety Analytics Platform - Video Script
 
 ## Introduction (30 seconds)
-"Hi, I'm excited to showcase my Road Safety Analytics Platform that I built using JavaScript and React. In this video, I'll walk you through how I implemented various features and show you the JavaScript code behind them."
+"Hi, I'm excited to showcase my Road Safety Analytics Platform. Let me walk you through the key components and code implementations."
 
-## Part 1: Project Overview (45 seconds)
-"Let me show you the main parts of my application:
-1. A data collection system with form validation
-2. An analytics dashboard with interactive visualizations
-3. Real-time data synchronization using Firebase"
+## Part 1: Project Architecture (45 seconds)
+"The project consists of three main components:
+1. Frontend with React and JavaScript for data collection and visualization
+2. Firebase Realtime Database for data storage
+3. Analytics implementation for data processing"
 
-## Part 2: Data Collection System [AR2] (2 minutes)
+## Part 2: Form Implementation [AR2] (2 minutes)
 
-### Form Implementation
-"One of the interesting challenges I tackled was implementing a form that handles three different data types. Here's how I did it using JavaScript:"
+### Form Validation Code
+```javascript
+// Form validation schemas using Zod
+const accidentReportSchema = z.object({
+  // Location validation: Must be between 3-100 characters
+  location: z.string()
+    .min(3, "Please enter a more specific location")
+    .max(100, "Location must not exceed 100 characters"),
 
-1. String Fields:
-   ```javascript
-   // From submit-report.jsx - My custom validation rules
-   const accidentReportSchema = z.object({
-     location: z.string()
-       .min(3, "Please enter a more specific location")
-       .max(100, "Location description is too long"),
-     description: z.string()
-       .min(20, "Could you provide more details?")
-       .max(500, "Description is too long")
-   });
-   ```
+  // Description validation: Requires detailed information
+  description: z.string()
+    .min(20, "Please provide more details")
+    .max(500, "Description must not exceed 500 characters"),
 
-2. Number Fields:
-   ```javascript
-   // My numeric validation with custom error messages
-   vehiclesInvolved: z.number()
-     .int()
-     .min(1, "At least one vehicle must be involved")
-     .max(10, "For major incidents, contact emergency services"),
-   injuryCount: z.number()
-     .int()
-     .min(0, "Number of injuries cannot be negative")
-   ```
+  // Vehicle count validation: Must be between 1-10
+  vehiclesInvolved: z.number()
+    .int()
+    .min(1, "At least one vehicle must be involved")
+    .max(10, "For major incidents, contact emergency services")
+});
+```
 
-3. Boolean Fields:
-   ```javascript
-   // Critical flags for emergency response
-   medicalAssistance: z.boolean().default(false),
-   hitAndRun: z.boolean().default(false)
-   ```
+### Firebase Integration
+```javascript
+// Firebase configuration setup
+const firebaseConfig = {
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  databaseURL: import.meta.env.VITE_FIREBASE_DATABASE_URL,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID
+};
 
-## Part 3: Form Handling and Real-time Updates (1.5 minutes)
+// Firebase service implementation
+const firebaseService = {
+  async submitAccidentReport(data) {
+    const reportsRef = ref(db, 'accidentReports');
+    return push(reportsRef, {
+      ...data,
+      timestamp: new Date().toISOString()
+    });
+  },
 
-"Here's how I handle form submission and real-time updates:"
+  async getAccidentReports() {
+    const reportsRef = ref(db, 'accidentReports');
+    const snapshot = await get(reportsRef);
+    return snapshot.exists() ? Object.values(snapshot.val()) : [];
+  }
+};
+```
 
-1. Form Configuration:
-   ```javascript
-   // My form setup for handling user input
-   const accidentForm = useForm({
-     resolver: zodResolver(accidentReportSchema),
-     defaultValues: {
-       vehiclesInvolved: 1,
-       injuryCount: 0,
-       medicalAssistance: false,
-       hitAndRun: false,
-     },
-   });
-   ```
+### Form State Management
+```javascript
+// Form hooks setup with validation
+const accidentForm = useForm({
+  resolver: zodResolver(accidentReportSchema),
+  defaultValues: {
+    vehiclesInvolved: 1,
+    injuryCount: 0,
+    medicalAssistance: false,
+    hitAndRun: false,
+  },
+});
 
-2. Real-time Data Handling:
-   ```javascript
-   // My real-time data fetching implementation
-   const { data: submittedReports = [] } = useQuery({
-     queryKey: ['accidentReports'],
-     queryFn: firebaseService.getAccidentReports
-   });
+// Real-time data fetching with TanStack Query
+const { data: submittedReports = [] } = useQuery({
+  queryKey: ['accidentReports'],
+  queryFn: firebaseService.getAccidentReports,
+  refetchInterval: 5000 // Auto-refresh every 5 seconds
+});
+```
 
-   // My mutation setup for form submissions
-   const accidentMutation = useMutation({
-     mutationFn: firebaseService.submitAccidentReport,
-     onSuccess: () => {
-       toast({
-         title: "Report Submitted",
-         description: "Successfully submitted.",
-       });
-       accidentForm.reset();
-     }
-   });
-   ```
+## Part 3: UI Components (1.5 minutes)
 
-## Part 4: Analytics Dashboard [AR3] (2 minutes)
+### Theme Configuration
+```javascript
+// Tailwind theme configuration
+const theme = {
+  extend: {
+    colors: {
+      primary: "hsl(var(--primary))",
+      secondary: "hsl(var(--secondary))",
+      background: "hsl(var(--background))",
+      foreground: "hsl(var(--foreground))"
+    }
+  }
+};
 
-"For the analytics part, I wrote several JavaScript functions to process and visualize the data:"
+// Component styling with Tailwind
+<div className="container mx-auto p-4 max-w-4xl">
+  <h1 className="text-4xl font-bold mb-3 bg-gradient-to-r 
+    from-primary to-primary/80 bg-clip-text text-transparent">
+    Data Collection [AR2]
+  </h1>
+</div>
+```
 
-1. Data Analysis Functions:
-   ```javascript
-   // My custom analysis function to calculate trends
-   function calculateTrends(data) {
-     const states = Object.keys(data.yearly_data);
-     const years = ["2016", "2017", "2018", "2019"];
+### Form Components
+```javascript
+// Radio group implementation for Yes/No options
+<RadioGroup
+  onValueChange={(value) => field.onChange(value === "yes")}
+  defaultValue={field.value ? "yes" : "no"}
+  className="flex flex-col space-y-1"
+>
+  <div className="flex items-center space-x-2">
+    <RadioGroupItem value="yes" id="option-yes" />
+    <label htmlFor="option-yes">Yes</label>
+  </div>
+  <div className="flex items-center space-x-2">
+    <RadioGroupItem value="no" id="option-no" />
+    <label htmlFor="option-no">No</label>
+  </div>
+</RadioGroup>
+```
 
-     // Calculate overall trend
-     const totalsByYear = years.map(year =>
-       states.reduce((sum, state) => 
-         sum + data.yearly_data[state][year], 0)
-     );
+## Part 4: Data Visualization (2 minutes)
 
-     const overallChange = ((totalsByYear[3] - totalsByYear[0]) / 
-       totalsByYear[0] * 100).toFixed(1);
-   }
-   ```
+### Chart Implementation
+```javascript
+// Sorting and data processing for visualization
+const sortedReports = [...submittedReports].sort((a, b) => 
+  new Date(b.timestamp) - new Date(a.timestamp)
+);
 
-2. Data Processing Functions:
-   ```javascript
-   // My helper functions for data analysis
-   const getAverageInjuries = () => {
-     if (submittedReports.length === 0) return 0;
-     const total = submittedReports.reduce((sum, report) => 
-       sum + report.injuryCount, 0);
-     return (total / submittedReports.length).toFixed(1);
-   };
-   ```
+// Data display with ScrollArea component
+<ScrollArea className="h-[400px] w-full rounded-md border p-4">
+  <div className="space-y-4">
+    {sortedReports.map((report, index) => (
+      <div key={index} className="border-b pb-4 last:border-0">
+        <div className="flex justify-between items-start">
+          <p className="font-medium">{report.location}</p>
+          <p className="text-sm text-muted-foreground">
+            {formatTimestamp(report.timestamp)}
+          </p>
+        </div>
+      </div>
+    ))}
+  </div>
+</ScrollArea>
+```
 
-## Part 5: Key Technical Decisions (1 minute)
-
-"Let me highlight some key technical decisions I made:
-1. Used modern JavaScript features for better code organization
-2. Implemented Zod for robust form validation
-3. Chose React Query for efficient data management
-4. Used Recharts for responsive data visualization"
+## Part 5: Key Technical Features (1 minute)
+"Let me highlight some key technical implementations:
+1. Real-time data synchronization with Firebase
+2. Form validation using Zod schemas
+3. Responsive UI with Tailwind CSS
+4. Interactive data visualization with ScrollArea"
 
 ## Conclusion (30 seconds)
-"This project demonstrates my understanding of:
-- Modern JavaScript development
-- React hooks and components
-- Data validation and form handling
-- Real-time data management
-- Analytics and data visualization
+"This project demonstrates:
+- Modern JavaScript development practices
+- Real-time data handling
+- User-friendly form validation
+- Responsive design principles
 
 Thank you for watching!"
 
-## Key Points to Emphasize:
-1. Multiple data type handling in forms
-2. Custom validation with JavaScript
-3. Real-time updates with React Query
-4. Interactive data visualization with Recharts
-5. Modern JavaScript features and best practices
+## Key Implementation Notes:
+1. Form validation ensures data quality
+2. Real-time updates keep data fresh
+3. Responsive design works on all devices
+4. Firebase integration provides scalability

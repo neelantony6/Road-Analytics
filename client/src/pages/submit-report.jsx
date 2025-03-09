@@ -1,3 +1,4 @@
+// Import statements for required dependencies and components
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -13,10 +14,11 @@ import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { ScrollArea } from "@/components/ui/scroll-area"; // Fixed import
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { firebaseService } from "@/lib/firebase";
 
-// Form validation schemas
+// Form validation schemas using Zod
+// These schemas define the shape and validation rules for our form data
 const accidentReportSchema = z.object({
   location: z.string()
     .min(3, "Please enter a more specific location")
@@ -50,7 +52,7 @@ const trafficReportSchema = z.object({
     .max(500, "Description must not exceed 500 characters"),
 });
 
-// Helper function to format timestamp
+// Helper function to format timestamp into a readable format
 function formatTimestamp(timestamp) {
   if (!timestamp) return '';
   const date = new Date(timestamp);
@@ -64,11 +66,12 @@ function formatTimestamp(timestamp) {
   });
 }
 
+// Main component for submitting accident and traffic reports
 export default function SubmitReport() {
   const { toast } = useToast();
   const [error] = useState(null);
 
-  // Queries for fetching reports
+  // Queries for fetching reports with real-time updates
   const { data: submittedAccidentReports = [] } = useQuery({
     queryKey: ['accidentReports'],
     queryFn: () => firebaseService.getAccidentReports(),
@@ -81,7 +84,7 @@ export default function SubmitReport() {
     refetchInterval: 5000 // Refetch every 5 seconds to keep data fresh
   });
 
-  // Form setup
+  // Form setup with validation schemas
   const accidentForm = useForm({
     resolver: zodResolver(accidentReportSchema),
     defaultValues: {
@@ -108,7 +111,7 @@ export default function SubmitReport() {
     new Date(b.timestamp) - new Date(a.timestamp)
   );
 
-  // Mutations
+  // Mutations for handling form submissions
   const accidentMutation = useMutation({
     mutationFn: firebaseService.submitAccidentReport,
     onSuccess: () => {
@@ -145,6 +148,7 @@ export default function SubmitReport() {
     }
   });
 
+  // Component render with form fields and data display
   return (
     <div className="container mx-auto p-4 max-w-4xl">
       <div className="mb-8">
