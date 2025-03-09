@@ -1,6 +1,6 @@
 // Firebase configuration and service
 import { initializeApp } from "firebase/app";
-import { getDatabase, ref, get, query, orderByChild } from "firebase/database";
+import { getDatabase, ref, push, get, query, orderByChild } from "firebase/database";
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -74,6 +74,89 @@ export const firebaseService = {
       }
     } catch (error) {
       console.error('Error fetching trend data:', error);
+      throw error;
+    }
+  },
+  // Submit accident report
+  async submitAccidentReport(data) {
+    try {
+      const reportsRef = ref(db, 'accident_reports');
+      await push(reportsRef, {
+        ...data,
+        timestamp: new Date().toISOString()
+      });
+      return true;
+    } catch (error) {
+      console.error('Error submitting accident report:', error);
+      throw error;
+    }
+  },
+
+  // Get all accident reports
+  async getAccidentReports() {
+    try {
+      const reportsRef = ref(db, 'accident_reports');
+      const snapshot = await get(reportsRef);
+      if (snapshot.exists()) {
+        return Object.values(snapshot.val());
+      }
+      return [];
+    } catch (error) {
+      console.error('Error fetching accident reports:', error);
+      throw error;
+    }
+  },
+
+  // Submit traffic report
+  async submitTrafficReport(data) {
+    try {
+      const reportsRef = ref(db, 'traffic_reports');
+      await push(reportsRef, {
+        ...data,
+        timestamp: new Date().toISOString()
+      });
+      return true;
+    } catch (error) {
+      console.error('Error submitting traffic report:', error);
+      throw error;
+    }
+  },
+
+  // Submit safety suggestion
+  async submitSafetySuggestion(data) {
+    try {
+      const suggestionsRef = ref(db, 'safety_suggestions');
+      await push(suggestionsRef, {
+        ...data,
+        timestamp: new Date().toISOString()
+      });
+      return true;
+    } catch (error) {
+      console.error('Error submitting safety suggestion:', error);
+      throw error;
+    }
+  },
+
+  // Get analytics data
+  async getAnalyticsData() {
+    try {
+      const accidentReportsRef = ref(db, 'accident_reports');
+      const trafficReportsRef = ref(db, 'traffic_reports');
+      const suggestionsRef = ref(db, 'safety_suggestions');
+
+      const [accidentSnapshot, trafficSnapshot, suggestionsSnapshot] = await Promise.all([
+        get(accidentReportsRef),
+        get(trafficReportsRef),
+        get(suggestionsRef)
+      ]);
+
+      return {
+        accidentReports: accidentSnapshot.exists() ? Object.values(accidentSnapshot.val()) : [],
+        trafficReports: trafficSnapshot.exists() ? Object.values(trafficSnapshot.val()) : [],
+        safetySuggestions: suggestionsSnapshot.exists() ? Object.values(suggestionsSnapshot.val()) : []
+      };
+    } catch (error) {
+      console.error('Error fetching analytics data:', error);
       throw error;
     }
   }

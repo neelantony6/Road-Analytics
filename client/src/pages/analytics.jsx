@@ -1,164 +1,164 @@
+import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { TrendingDown, TrendingUp } from "lucide-react";
-import RoadAccidentGraph from "@/components/charts/road-accident-graph";
-
-// Mock data for analytics
-const mockData = {
-  yearly_data: {
-    "Tamil Nadu": {
-      "2016": 71431,
-      "2017": 65562,
-      "2018": 63920,
-      "2019": 57228
-    },
-    "Madhya Pradesh": {
-      "2016": 53972,
-      "2017": 53399,
-      "2018": 51397,
-      "2019": 50669
-    },
-    "Karnataka": {
-      "2016": 44403,
-      "2017": 42542,
-      "2018": 41707,
-      "2019": 40658
-    },
-    "Maharashtra": {
-      "2016": 39878,
-      "2017": 35853,
-      "2018": 35717,
-      "2019": 32925
-    },
-    "Kerala": {
-      "2016": 39420,
-      "2017": 38470,
-      "2018": 40181,
-      "2019": 41111
-    }
-  }
-};
-
-function calculateTrends(data) {
-  const states = Object.keys(data.yearly_data);
-  const years = ["2016", "2017", "2018", "2019"];
-
-  // Calculate overall trend
-  const totalsByYear = years.map(year => 
-    states.reduce((sum, state) => sum + data.yearly_data[state][year], 0)
-  );
-
-  const overallChange = ((totalsByYear[3] - totalsByYear[0]) / totalsByYear[0] * 100).toFixed(1);
-
-  // Find states with most significant changes
-  const stateChanges = states.map(state => {
-    const change = ((data.yearly_data[state]["2019"] - data.yearly_data[state]["2016"]) 
-      / data.yearly_data[state]["2016"] * 100).toFixed(1);
-    return { state, change: Number(change) };
-  });
-
-  const mostImproved = stateChanges.sort((a, b) => a.change - b.change)[0];
-  const mostDeclined = stateChanges.sort((a, b) => b.change - a.change)[0];
-
-  return {
-    overallChange: Number(overallChange),
-    mostImproved,
-    mostDeclined,
-    totalAccidents2019: totalsByYear[3],
-    totalAccidents2016: totalsByYear[0]
-  };
-}
+import { AlertCircle } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { firebaseService } from "@/lib/firebase";
+import { Skeleton } from "@/components/ui/skeleton";
 
 function AnalyticsView() {
-  const trends = calculateTrends(mockData);
+  const [analyticsData, setAnalyticsData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const data = await firebaseService.getAnalyticsData();
+        setAnalyticsData(data);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="container mx-auto px-4 py-8 space-y-8">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {[1, 2, 3].map((i) => (
+            <Card key={i} className="p-6">
+              <Skeleton className="h-4 w-1/2 mb-4" />
+              <Skeleton className="h-8 w-24" />
+            </Card>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <Alert variant="destructive" className="m-4">
+        <AlertCircle className="h-4 w-4" />
+        <AlertDescription>{error}</AlertDescription>
+      </Alert>
+    );
+  }
+
+  if (!analyticsData) {
+    return (
+      <Alert className="m-4">
+        <AlertCircle className="h-4 w-4" />
+        <AlertDescription>No data available for analysis.</AlertDescription>
+      </Alert>
+    );
+  }
+
+  const { accidentReports, trafficReports, safetySuggestions } = analyticsData;
+
+  // Calculate total accidents by type
+  const accidentsByType = accidentReports.reduce((acc, report) => {
+    acc[report.accidentType] = (acc[report.accidentType] || 0) + 1;
+    return acc;
+  }, {});
+
+  // Calculate average severity from traffic reports
+  const averageSeverity = trafficReports.length > 0
+    ? (trafficReports.reduce((sum, report) => sum + report.severity, 0) / trafficReports.length).toFixed(1)
+    : 0;
+
+  // Get suggestions by category
+  const suggestionsByCategory = safetySuggestions.reduce((acc, suggestion) => {
+    acc[suggestion.category] = (acc[suggestion.category] || 0) + 1;
+    return acc;
+  }, {});
 
   return (
     <div className="container mx-auto px-4 py-8 space-y-8">
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-4xl font-bold mb-3 bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
-          Road Safety Analytics
+          Safety Analysis Dashboard [AR3]
         </h1>
         <p className="text-lg text-muted-foreground">
-          Comprehensive analysis of road accident trends across Indian states (2016-2019)
+          Analysis of submitted accident reports and safety suggestions
         </p>
       </div>
 
       {/* Overview Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         <Card className="p-6">
-          <h3 className="text-xl font-semibold mb-4">Overall Trend</h3>
-          <div className="flex items-center gap-2">
-            {trends.overallChange > 0 ? (
-              <TrendingUp className="text-red-500" />
-            ) : (
-              <TrendingDown className="text-green-500" />
-            )}
-            <span className={trends.overallChange > 0 ? "text-red-500" : "text-green-500"}>
-              {Math.abs(trends.overallChange)}% {trends.overallChange > 0 ? "increase" : "decrease"}
-            </span>
-          </div>
-          <p className="text-sm text-muted-foreground mt-2">
-            From {trends.totalAccidents2016.toLocaleString()} accidents in 2016 to{" "}
-            {trends.totalAccidents2019.toLocaleString()} in 2019
-          </p>
-        </Card>
-
-        <Card className="p-6">
-          <h3 className="text-xl font-semibold mb-4">Most Improved State</h3>
+          <h3 className="text-xl font-semibold mb-4">Total Reports</h3>
           <div className="space-y-2">
-            <p className="font-medium">{trends.mostImproved.state}</p>
-            <p className="text-green-500 flex items-center gap-2">
-              <TrendingDown className="h-4 w-4" />
-              {Math.abs(trends.mostImproved.change)}% decrease
-            </p>
+            <p className="text-3xl font-bold">{accidentReports.length}</p>
+            <p className="text-sm text-muted-foreground">Accident Reports Submitted</p>
           </div>
         </Card>
 
         <Card className="p-6">
-          <h3 className="text-xl font-semibold mb-4">Most Concerning State</h3>
+          <h3 className="text-xl font-semibold mb-4">Average Severity</h3>
           <div className="space-y-2">
-            <p className="font-medium">{trends.mostDeclined.state}</p>
-            <p className="text-red-500 flex items-center gap-2">
-              <TrendingUp className="h-4 w-4" />
-              {trends.mostDeclined.change}% increase
-            </p>
+            <p className="text-3xl font-bold">{averageSeverity}</p>
+            <p className="text-sm text-muted-foreground">From {trafficReports.length} Traffic Reports</p>
+          </div>
+        </Card>
+
+        <Card className="p-6">
+          <h3 className="text-xl font-semibold mb-4">Safety Suggestions</h3>
+          <div className="space-y-2">
+            <p className="text-3xl font-bold">{safetySuggestions.length}</p>
+            <p className="text-sm text-muted-foreground">Community Suggestions</p>
           </div>
         </Card>
       </div>
 
-      {/* Charts */}
-      <div className="grid gap-6">
+      {/* Detailed Analysis */}
+      <div className="grid gap-6 md:grid-cols-2">
         <Card className="p-6">
-          <RoadAccidentGraph data={mockData} />
+          <h3 className="text-xl font-semibold mb-4">Accidents by Type</h3>
+          <div className="space-y-4">
+            {Object.entries(accidentsByType).map(([type, count]) => (
+              <div key={type} className="flex justify-between items-center">
+                <span className="capitalize">{type.replace('_', ' ')}</span>
+                <span className="font-bold">{count}</span>
+              </div>
+            ))}
+          </div>
+        </Card>
+
+        <Card className="p-6">
+          <h3 className="text-xl font-semibold mb-4">Suggestions by Category</h3>
+          <div className="space-y-4">
+            {Object.entries(suggestionsByCategory).map(([category, count]) => (
+              <div key={category} className="flex justify-between items-center">
+                <span className="capitalize">{category.replace('_', ' ')}</span>
+                <span className="font-bold">{count}</span>
+              </div>
+            ))}
+          </div>
         </Card>
       </div>
 
-      {/* Key Insights */}
+      {/* Recent Reports */}
       <Card className="p-6">
-        <h3 className="text-xl font-semibold mb-4">Key Insights</h3>
-        <ul className="space-y-3">
-          <li className="flex items-start gap-2">
-            <span className="bg-primary/10 p-1 rounded-full mt-1">•</span>
-            <span>
-              Tamil Nadu consistently shows the highest number of accidents,
-              but demonstrates a steady decline over the years.
-            </span>
-          </li>
-          <li className="flex items-start gap-2">
-            <span className="bg-primary/10 p-1 rounded-full mt-1">•</span>
-            <span>
-              Most states show a downward trend in accident numbers from 2016 to 2019,
-              indicating improving road safety measures.
-            </span>
-          </li>
-          <li className="flex items-start gap-2">
-            <span className="bg-primary/10 p-1 rounded-full mt-1">•</span>
-            <span>
-              The top 5 states account for over 50% of total accidents,
-              suggesting a need for focused intervention in these regions.
-            </span>
-          </li>
-        </ul>
+        <h3 className="text-xl font-semibold mb-4">Recent Reports</h3>
+        <div className="space-y-4">
+          {accidentReports.slice(-5).reverse().map((report, index) => (
+            <div key={index} className="p-4 border rounded-lg">
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                <p><strong>Date:</strong> {new Date(report.date).toLocaleDateString()}</p>
+                <p><strong>Location:</strong> {report.location}</p>
+                <p><strong>Type:</strong> {report.accidentType.replace('_', ' ')}</p>
+                <p><strong>Vehicles:</strong> {report.vehiclesInvolved}</p>
+              </div>
+            </div>
+          ))}
+        </div>
       </Card>
     </div>
   );
