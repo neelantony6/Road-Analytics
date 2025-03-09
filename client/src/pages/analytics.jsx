@@ -2,7 +2,6 @@ import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { TrendingDown, TrendingUp } from "lucide-react";
 import RoadAccidentGraph from "@/components/charts/road-accident-graph";
-import StateComparison from "@/components/charts/state-comparison";
 
 // I collected this data from government reports to analyze road safety trends
 const mockData = {
@@ -72,7 +71,6 @@ function calculateTrends(data) {
 }
 
 function AnalyticsView() {
-  const [selectedYear, setSelectedYear] = useState("2019");
   const trends = calculateTrends(mockData);
 
   return (
