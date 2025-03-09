@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { z } from "zod";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -11,14 +11,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { firebaseService } from "@/lib/firebase";
 import { AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { ref, push, get, getDatabase } from "firebase/database";
-import { db } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 
-
-// Form validation schema
+// Form validation schemas
 const accidentReportSchema = z.object({
   location: z.string()
     .min(3, "Location must be at least 3 characters")
@@ -34,13 +31,8 @@ const accidentReportSchema = z.object({
   date: z.string().min(1, "Date is required"),
 });
 
-type AccidentReport = z.infer<typeof accidentReportSchema>;
-
-// Form validation schemas with enhanced validation
 const trafficReportSchema = z.object({
-  date: z.string()
-    .min(1, "Date is required")
-    .refine((date) => !isNaN(Date.parse(date)), "Invalid date format"),
+  date: z.string().min(1, "Date is required"),
   location: z.string()
     .min(3, "Location must be at least 3 characters")
     .max(100, "Location must not exceed 100 characters"),
@@ -61,24 +53,29 @@ const safetySuggestionSchema = z.object({
   }),
 });
 
+type AccidentReport = z.infer<typeof accidentReportSchema>;
 type TrafficReport = z.infer<typeof trafficReportSchema>;
 type SafetySuggestion = z.infer<typeof safetySuggestionSchema>;
 
 export default function SubmitReport() {
   const { toast } = useToast();
-  const queryClient = useQueryClient();
-  const [submittedReports, setSubmittedReports] = useState<any[]>([]);
-  const [submissionError, setSubmissionError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const form = useForm<AccidentReport>({
+  // Query for fetching submitted reports
+  const { data: submittedReports = [] } = useQuery({
+    queryKey: ['accidentReports'],
+    queryFn: firebaseService.getAccidentReports
+  });
+
+  // Form setup
+  const accidentForm = useForm<AccidentReport>({
     resolver: zodResolver(accidentReportSchema),
     defaultValues: {
       vehiclesInvolved: "1",
     },
   });
 
-  const reportForm = useForm<TrafficReport>({
+  const trafficForm = useForm<TrafficReport>({
     resolver: zodResolver(trafficReportSchema),
     defaultValues: {
       severity: 1,
@@ -89,92 +86,60 @@ export default function SubmitReport() {
     resolver: zodResolver(safetySuggestionSchema),
   });
 
-  const reportMutation = useMutation({
-    mutationFn: async (data: TrafficReport) => {
-      setSubmissionError(null);
-      return await firebaseService.submitTrafficReport(data);
-    },
+  // Mutations
+  const accidentMutation = useMutation({
+    mutationFn: firebaseService.submitAccidentReport,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/reports"] });
       toast({
-        title: "Report Submitted Successfully",
-        description: "Thank you for contributing to road safety.",
+        title: "Report Submitted",
+        description: "Your accident report has been submitted successfully.",
       });
-      reportForm.reset();
+      accidentForm.reset();
     },
     onError: (error: Error) => {
-      setSubmissionError(error.message);
       toast({
         title: "Submission Failed",
         description: error.message,
         variant: "destructive",
       });
+    }
+  });
+
+  const trafficMutation = useMutation({
+    mutationFn: firebaseService.submitTrafficReport,
+    onSuccess: () => {
+      toast({
+        title: "Report Submitted",
+        description: "Your traffic report has been submitted successfully.",
+      });
+      trafficForm.reset();
     },
+    onError: (error: Error) => {
+      toast({
+        title: "Submission Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
   });
 
   const suggestionMutation = useMutation({
-    mutationFn: async (data: SafetySuggestion) => {
-      setSubmissionError(null);
-      return await firebaseService.submitSafetySuggestion(data);
-    },
+    mutationFn: firebaseService.submitSafetySuggestion,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/suggestions"] });
       toast({
-        title: "Suggestion Submitted Successfully",
-        description: "Thank you for your valuable input.",
+        title: "Suggestion Submitted",
+        description: "Your safety suggestion has been submitted successfully.",
       });
       suggestionForm.reset();
     },
     onError: (error: Error) => {
-      setSubmissionError(error.message);
       toast({
         title: "Submission Failed",
         description: error.message,
         variant: "destructive",
       });
-    },
-  });
-
-  useEffect(() => {
-    // Load existing reports
-    const loadReports = async () => {
-      try {
-        const reportsRef = ref(getDatabase(), 'accident_reports');
-        const snapshot = await get(reportsRef);
-        if (snapshot.exists()) {
-          const reports = Object.values(snapshot.val());
-          setSubmittedReports(reports);
-        }
-      } catch (error) {
-        console.error('Error loading reports:', error);
-        setError('Failed to load existing reports');
-      }
-    };
-
-    loadReports();
-  }, []);
-
-  const onSubmit = async (data: AccidentReport) => {
-    try {
-      setError(null);
-      const reportsRef = ref(getDatabase(), 'accident_reports');
-      await push(reportsRef, {
-        ...data,
-        timestamp: new Date().toISOString(),
-      });
-
-      // Refresh the reports list
-      const snapshot = await get(reportsRef);
-      if (snapshot.exists()) {
-        setSubmittedReports(Object.values(snapshot.val()));
-      }
-
-      form.reset();
-    } catch (error) {
-      console.error('Error submitting report:', error);
-      setError('Failed to submit report. Please try again.');
     }
-  };
+  });
 
   return (
     <div className="container mx-auto p-4 max-w-4xl">
@@ -193,17 +158,11 @@ export default function SubmitReport() {
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
-      {submissionError && (
-        <Alert variant="destructive" className="mb-6">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>{submissionError}</AlertDescription>
-        </Alert>
-      )}
 
       <Tabs defaultValue="accidentReport" className="space-y-4">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="accidentReport">Accident Report</TabsTrigger>
-          <TabsTrigger value="report">Incident Report</TabsTrigger>
+          <TabsTrigger value="trafficReport">Traffic Report</TabsTrigger>
           <TabsTrigger value="suggestion">Safety Suggestion</TabsTrigger>
         </TabsList>
 
@@ -213,10 +172,10 @@ export default function SubmitReport() {
               <CardTitle>Submit Accident Report</CardTitle>
             </CardHeader>
             <CardContent>
-              <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <Form {...accidentForm}>
+                <form onSubmit={accidentForm.handleSubmit(data => accidentMutation.mutate(data))} className="space-y-4">
                   <FormField
-                    control={form.control}
+                    control={accidentForm.control}
                     name="date"
                     render={({ field }) => (
                       <FormItem>
@@ -230,7 +189,7 @@ export default function SubmitReport() {
                   />
 
                   <FormField
-                    control={form.control}
+                    control={accidentForm.control}
                     name="location"
                     render={({ field }) => (
                       <FormItem>
@@ -244,7 +203,7 @@ export default function SubmitReport() {
                   />
 
                   <FormField
-                    control={form.control}
+                    control={accidentForm.control}
                     name="accidentType"
                     render={({ field }) => (
                       <FormItem>
@@ -267,7 +226,7 @@ export default function SubmitReport() {
                   />
 
                   <FormField
-                    control={form.control}
+                    control={accidentForm.control}
                     name="vehiclesInvolved"
                     render={({ field }) => (
                       <FormItem>
@@ -280,8 +239,12 @@ export default function SubmitReport() {
                     )}
                   />
 
-                  <Button type="submit" className="w-full">
-                    Submit Report
+                  <Button 
+                    type="submit" 
+                    className="w-full"
+                    disabled={accidentMutation.isPending}
+                  >
+                    {accidentMutation.isPending ? "Submitting..." : "Submit Report"}
                   </Button>
                 </form>
               </Form>
@@ -289,13 +252,13 @@ export default function SubmitReport() {
           </Card>
 
           {/* Display submitted reports */}
-          <Card>
+          <Card className="mt-6">
             <CardHeader>
-              <CardTitle>Submitted Reports</CardTitle>
+              <CardTitle>Recent Reports</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {submittedReports.map((report, index) => (
+                {submittedReports.slice(-5).reverse().map((report: any, index) => (
                   <div key={index} className="p-4 border rounded-lg">
                     <div className="grid grid-cols-2 gap-2 text-sm">
                       <p><strong>Date:</strong> {new Date(report.date).toLocaleDateString()}</p>
@@ -314,19 +277,17 @@ export default function SubmitReport() {
             </CardContent>
           </Card>
         </TabsContent>
-        <TabsContent value="report">
+
+        <TabsContent value="trafficReport">
           <Card>
             <CardHeader>
               <CardTitle>Traffic Incident Report</CardTitle>
-              <CardDescription>
-                Report details about a traffic incident to help identify patterns and improve safety measures.
-              </CardDescription>
             </CardHeader>
             <CardContent>
-              <Form {...reportForm}>
-                <form onSubmit={reportForm.handleSubmit((data) => reportMutation.mutate(data))} className="space-y-4">
+              <Form {...trafficForm}>
+                <form onSubmit={trafficForm.handleSubmit(data => trafficMutation.mutate(data))} className="space-y-4">
                   <FormField
-                    control={reportForm.control}
+                    control={trafficForm.control}
                     name="date"
                     render={({ field }) => (
                       <FormItem>
@@ -338,8 +299,9 @@ export default function SubmitReport() {
                       </FormItem>
                     )}
                   />
+
                   <FormField
-                    control={reportForm.control}
+                    control={trafficForm.control}
                     name="location"
                     render={({ field }) => (
                       <FormItem>
@@ -353,12 +315,15 @@ export default function SubmitReport() {
                   />
 
                   <FormField
-                    control={reportForm.control}
+                    control={trafficForm.control}
                     name="severity"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Severity Level</FormLabel>
-                        <Select value={field.value.toString()} onValueChange={(value) => field.onChange(parseInt(value))}>
+                        <Select 
+                          value={field.value.toString()} 
+                          onValueChange={(value) => field.onChange(parseInt(value))}
+                        >
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue />
@@ -369,10 +334,10 @@ export default function SubmitReport() {
                               <SelectItem key={level} value={level.toString()}>
                                 {level} - {
                                   level === 1 ? "Minor" :
-                                    level === 2 ? "Moderate" :
-                                      level === 3 ? "Serious" :
-                                        level === 4 ? "Severe" :
-                                          "Critical"
+                                  level === 2 ? "Moderate" :
+                                  level === 3 ? "Serious" :
+                                  level === 4 ? "Severe" :
+                                  "Critical"
                                 }
                               </SelectItem>
                             ))}
@@ -384,7 +349,7 @@ export default function SubmitReport() {
                   />
 
                   <FormField
-                    control={reportForm.control}
+                    control={trafficForm.control}
                     name="description"
                     render={({ field }) => (
                       <FormItem>
@@ -401,25 +366,27 @@ export default function SubmitReport() {
                     )}
                   />
 
-                  <Button type="submit" className="w-full" disabled={reportMutation.isPending}>
-                    {reportMutation.isPending ? "Submitting..." : "Submit Report"}
+                  <Button 
+                    type="submit" 
+                    className="w-full"
+                    disabled={trafficMutation.isPending}
+                  >
+                    {trafficMutation.isPending ? "Submitting..." : "Submit Report"}
                   </Button>
                 </form>
               </Form>
             </CardContent>
           </Card>
         </TabsContent>
+
         <TabsContent value="suggestion">
           <Card>
             <CardHeader>
               <CardTitle>Safety Suggestion</CardTitle>
-              <CardDescription>
-                Share your ideas on how to improve road safety in your area.
-              </CardDescription>
             </CardHeader>
             <CardContent>
               <Form {...suggestionForm}>
-                <form onSubmit={suggestionForm.handleSubmit((data) => suggestionMutation.mutate(data))} className="space-y-4">
+                <form onSubmit={suggestionForm.handleSubmit(data => suggestionMutation.mutate(data))} className="space-y-4">
                   <FormField
                     control={suggestionForm.control}
                     name="suggestion"
@@ -444,7 +411,7 @@ export default function SubmitReport() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Category</FormLabel>
-                        <Select value={field.value} onValueChange={field.onChange}>
+                        <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue placeholder="Select a category" />
@@ -461,7 +428,11 @@ export default function SubmitReport() {
                     )}
                   />
 
-                  <Button type="submit" className="w-full" disabled={suggestionMutation.isPending}>
+                  <Button 
+                    type="submit" 
+                    className="w-full"
+                    disabled={suggestionMutation.isPending}
+                  >
                     {suggestionMutation.isPending ? "Submitting..." : "Submit Suggestion"}
                   </Button>
                 </form>
