@@ -57,12 +57,20 @@ type AccidentReport = z.infer<typeof accidentReportSchema>;
 type TrafficReport = z.infer<typeof trafficReportSchema>;
 type SafetySuggestion = z.infer<typeof safetySuggestionSchema>;
 
+interface SubmittedReport {
+  date: string;
+  location: string;
+  accidentType: string;
+  vehiclesInvolved: number;
+  timestamp: string;
+}
+
 export default function SubmitReport() {
   const { toast } = useToast();
-  const [error, setError] = useState<string | null>(null);
+  const [error] = useState<string | null>(null);
 
   // Query for fetching submitted reports
-  const { data: submittedReports = [] } = useQuery({
+  const { data: submittedReports = [] } = useQuery<SubmittedReport[]>({
     queryKey: ['accidentReports'],
     queryFn: firebaseService.getAccidentReports
   });
@@ -140,6 +148,20 @@ export default function SubmitReport() {
       });
     }
   });
+
+  // Analysis helpers
+  const getAccidentTypeDistribution = () => {
+    return submittedReports.reduce((acc: Record<string, number>, report) => {
+      acc[report.accidentType] = (acc[report.accidentType] || 0) + 1;
+      return acc;
+    }, {});
+  };
+
+  const getAverageVehiclesInvolved = () => {
+    if (submittedReports.length === 0) return 0;
+    const total = submittedReports.reduce((sum, report) => sum + report.vehiclesInvolved, 0);
+    return (total / submittedReports.length).toFixed(1);
+  };
 
   return (
     <div className="container mx-auto p-4 max-w-4xl">
@@ -239,8 +261,8 @@ export default function SubmitReport() {
                     )}
                   />
 
-                  <Button 
-                    type="submit" 
+                  <Button
+                    type="submit"
                     className="w-full"
                     disabled={accidentMutation.isPending}
                   >
@@ -258,7 +280,7 @@ export default function SubmitReport() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {submittedReports.slice(-5).reverse().map((report: any, index) => (
+                {submittedReports.slice(-5).reverse().map((report, index) => (
                   <div key={index} className="p-4 border rounded-lg">
                     <div className="grid grid-cols-2 gap-2 text-sm">
                       <p><strong>Date:</strong> {new Date(report.date).toLocaleDateString()}</p>
@@ -320,8 +342,8 @@ export default function SubmitReport() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Severity Level</FormLabel>
-                        <Select 
-                          value={field.value.toString()} 
+                        <Select
+                          value={field.value.toString()}
                           onValueChange={(value) => field.onChange(parseInt(value))}
                         >
                           <FormControl>
@@ -334,10 +356,10 @@ export default function SubmitReport() {
                               <SelectItem key={level} value={level.toString()}>
                                 {level} - {
                                   level === 1 ? "Minor" :
-                                  level === 2 ? "Moderate" :
-                                  level === 3 ? "Serious" :
-                                  level === 4 ? "Severe" :
-                                  "Critical"
+                                    level === 2 ? "Moderate" :
+                                      level === 3 ? "Serious" :
+                                        level === 4 ? "Severe" :
+                                          "Critical"
                                 }
                               </SelectItem>
                             ))}
@@ -366,8 +388,8 @@ export default function SubmitReport() {
                     )}
                   />
 
-                  <Button 
-                    type="submit" 
+                  <Button
+                    type="submit"
                     className="w-full"
                     disabled={trafficMutation.isPending}
                   >
@@ -428,8 +450,8 @@ export default function SubmitReport() {
                     )}
                   />
 
-                  <Button 
-                    type="submit" 
+                  <Button
+                    type="submit"
                     className="w-full"
                     disabled={suggestionMutation.isPending}
                   >
@@ -441,6 +463,67 @@ export default function SubmitReport() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Analysis of Submitted Reports */}
+      <Card className="mt-8">
+        <CardHeader>
+          <CardTitle>Reports Analysis</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-6">
+            {/* Accident Types Distribution */}
+            <div>
+              <h4 className="text-lg font-semibold mb-3">Distribution by Accident Type</h4>
+              <div className="grid grid-cols-3 gap-4">
+                {Object.entries(getAccidentTypeDistribution()).map(([type, count]) => (
+                  <Card key={type} className="p-4">
+                    <p className="text-sm text-muted-foreground capitalize">{type.replace('_', ' ')}</p>
+                    <p className="text-2xl font-bold">{count}</p>
+                  </Card>
+                ))}
+              </div>
+            </div>
+
+            {/* Recent Trends */}
+            <div>
+              <h4 className="text-lg font-semibold mb-3">Recent Trends</h4>
+              <div className="space-y-2">
+                <p className="text-sm text-muted-foreground">
+                  Total Reports: {submittedReports.length}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Average Vehicles Involved: {getAverageVehiclesInvolved()}
+                </p>
+              </div>
+            </div>
+
+            {/* Time-based Analysis */}
+            <div>
+              <h4 className="text-lg font-semibold mb-3">Temporal Distribution</h4>
+              <div className="space-y-2">
+                {submittedReports.length > 0 && (
+                  <>
+                    <p className="text-sm text-muted-foreground">
+                      Most Recent Report: {
+                        new Date(
+                          Math.max(...submittedReports.map(r => new Date(r.date).getTime()))
+                        ).toLocaleDateString()
+                      }
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      Earliest Report: {
+                        new Date(
+                          Math.min(...submittedReports.map(r => new Date(r.date).getTime()))
+                        ).toLocaleDateString()
+                      }
+                    </p>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
