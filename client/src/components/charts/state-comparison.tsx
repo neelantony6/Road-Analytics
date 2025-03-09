@@ -1,92 +1,61 @@
-import { useMemo } from "react";
-import Plot from "react-plotly.js";
-import { useMediaQuery } from "@/hooks/use-media-query";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 
-interface AccidentData {
-  total_accidents: number;
-  fatal_accidents: number;
+interface StateData {
   yearly_data: {
-    [year: string]: {
-      total: number;
-      fatal: number;
+    [state: string]: {
+      [year: string]: number;
     };
   };
 }
 
 interface StateComparisonProps {
-  data: Record<string, AccidentData>;
+  data: StateData;
+  selectedYear: string;
 }
 
-export default function StateComparison({ data }: StateComparisonProps) {
-  const isMobile = useMediaQuery("(max-width: 768px)");
-
-  const chartData = useMemo(() => {
-    const states = Object.keys(data || {});
-    const totalAccidents = states.map(state => data[state].total_accidents);
-    const fatalAccidents = states.map(state => data[state].fatal_accidents);
-
-    return [
-      {
-        x: states,
-        y: totalAccidents,
-        type: 'bar',
-        name: 'Total Accidents',
-        hovertemplate: '<b>%{x}</b><br>' +
-          'Total Accidents: %{y}<br>' +
-          '<extra></extra>'
-      },
-      {
-        x: states,
-        y: fatalAccidents,
-        type: 'bar',
-        name: 'Fatal Accidents',
-        hovertemplate: '<b>%{x}</b><br>' +
-          'Fatal Accidents: %{y}<br>' +
-          '<extra></extra>'
-      }
-    ];
-  }, [data]);
+const StateComparison = ({ data, selectedYear }: StateComparisonProps) => {
+  // Transform data for recharts
+  const chartData = Object.entries(data.yearly_data).map(([state, yearData]) => ({
+    state,
+    accidents: yearData[selectedYear]
+  }));
 
   return (
-    <div className="w-full relative">
-      <h2 className="text-xl font-semibold mb-4">State-wise Comparison</h2>
-      <Plot
-        data={chartData}
-        layout={{
-          autosize: true,
-          height: isMobile ? 350 : 400,
-          margin: isMobile 
-            ? { l: 40, r: 20, t: 30, b: 100 }
-            : { l: 50, r: 50, t: 30, b: 100 },
-          xaxis: { 
-            title: 'State',
-            tickangle: -45,
-            fixedrange: isMobile
-          },
-          yaxis: { 
-            title: 'Number of Accidents',
-            fixedrange: isMobile
-          },
-          barmode: 'group',
-          showlegend: true,
-          legend: isMobile ? {
-            orientation: 'h',
-            y: -0.3,
-            x: 0.5,
-            xanchor: 'center'
-          } : undefined,
-          dragmode: isMobile ? false : 'zoom',
-          hovermode: 'closest'
-        }}
-        config={{
-          responsive: true,
-          displayModeBar: !isMobile,
-          modeBarButtonsToRemove: ['lasso2d', 'select2d'],
-          displaylogo: false
-        }}
-        style={{ width: '100%' }}
-        className="transition-all duration-300"
-      />
-    </div>
+    <Card>
+      <CardHeader>
+        <CardTitle>State-wise Accident Distribution ({selectedYear})</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="h-[400px] w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 70 }}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis 
+                dataKey="state" 
+                angle={-45}
+                textAnchor="end"
+                height={70}
+                interval={0}
+              />
+              <YAxis />
+              <Tooltip 
+                formatter={(value: number) => value.toLocaleString()}
+                labelFormatter={(label) => `State: ${label}`}
+              />
+              <Legend />
+              <Bar 
+                dataKey="accidents" 
+                name="Number of Accidents" 
+                fill="#3b82f6"
+                radius={[4, 4, 0, 0]}
+              />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </CardContent>
+    </Card>
   );
-}
+};
+
+export default StateComparison;

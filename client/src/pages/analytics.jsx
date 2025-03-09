@@ -2,8 +2,7 @@ import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { TrendingDown, TrendingUp } from "lucide-react";
 import RoadAccidentGraph from "@/components/charts/road-accident-graph";
-import IndiaMap from "@/components/charts/india-map";
-import { Select } from "@/components/ui/select";
+import StateComparison from "@/components/charts/state-comparison";
 
 // I collected this data from government reports to analyze road safety trends
 const mockData = {
@@ -132,7 +131,7 @@ function AnalyticsView() {
         </Card>
       </div>
 
-      {/* Map View */}
+      {/* State Distribution */}
       <div className="grid gap-6">
         <div className="flex justify-end mb-4">
           <select 
@@ -145,10 +144,10 @@ function AnalyticsView() {
             ))}
           </select>
         </div>
-        <IndiaMap data={mockData} selectedYear={selectedYear} />
+        <StateComparison data={mockData} selectedYear={selectedYear} />
       </div>
 
-      {/* Charts */}
+      {/* Trend Chart */}
       <div className="grid gap-6">
         <Card className="p-6">
           <RoadAccidentGraph data={mockData} />
