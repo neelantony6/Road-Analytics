@@ -12,8 +12,7 @@ import { AlertCircle, ChevronDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { firebaseService } from "@/lib/firebase";
 
 // Form validation schemas
@@ -100,11 +99,11 @@ export default function SubmitReport() {
   });
 
   // Sort reports by timestamp in descending order (most recent first)
-  const sortedAccidentReports = [...submittedAccidentReports].sort((a, b) => 
+  const sortedAccidentReports = [...submittedAccidentReports].sort((a, b) =>
     new Date(b.timestamp) - new Date(a.timestamp)
   );
 
-  const sortedTrafficReports = [...submittedTrafficReports].sort((a, b) => 
+  const sortedTrafficReports = [...submittedTrafficReports].sort((a, b) =>
     new Date(b.timestamp) - new Date(a.timestamp)
   );
 
@@ -270,16 +269,25 @@ export default function SubmitReport() {
                       control={accidentForm.control}
                       name="medicalAssistance"
                       render={({ field }) => (
-                        <FormItem className="flex flex-row items-start space-x-3 space-y-0 p-4">
+                        <FormItem className="space-y-3">
+                          <FormLabel>Medical Assistance Required?</FormLabel>
                           <FormControl>
-                            <Checkbox
-                              checked={field.value}
-                              onCheckedChange={field.onChange}
-                            />
+                            <RadioGroup
+                              onValueChange={(value) => field.onChange(value === "yes")}
+                              defaultValue={field.value ? "yes" : "no"}
+                              className="flex flex-col space-y-1"
+                            >
+                              <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="yes" id="medical-yes" />
+                                <label htmlFor="medical-yes">Yes</label>
+                              </div>
+                              <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="no" id="medical-no" />
+                                <label htmlFor="medical-no">No</label>
+                              </div>
+                            </RadioGroup>
                           </FormControl>
-                          <div className="space-y-1 leading-none">
-                            <FormLabel>Medical Assistance Required</FormLabel>
-                          </div>
+                          <FormMessage />
                         </FormItem>
                       )}
                     />
@@ -288,16 +296,25 @@ export default function SubmitReport() {
                       control={accidentForm.control}
                       name="hitAndRun"
                       render={({ field }) => (
-                        <FormItem className="flex flex-row items-start space-x-3 space-y-0 p-4">
+                        <FormItem className="space-y-3">
+                          <FormLabel>Hit and Run Case?</FormLabel>
                           <FormControl>
-                            <Checkbox
-                              checked={field.value}
-                              onCheckedChange={field.onChange}
-                            />
+                            <RadioGroup
+                              onValueChange={(value) => field.onChange(value === "yes")}
+                              defaultValue={field.value ? "yes" : "no"}
+                              className="flex flex-col space-y-1"
+                            >
+                              <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="yes" id="hitrun-yes" />
+                                <label htmlFor="hitrun-yes">Yes</label>
+                              </div>
+                              <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="no" id="hitrun-no" />
+                                <label htmlFor="hitrun-no">No</label>
+                              </div>
+                            </RadioGroup>
                           </FormControl>
-                          <div className="space-y-1 leading-none">
-                            <FormLabel>Hit and Run Case</FormLabel>
-                          </div>
+                          <FormMessage />
                         </FormItem>
                       )}
                     />
