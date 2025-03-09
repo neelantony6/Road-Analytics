@@ -8,11 +8,12 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, ChevronDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { firebaseService } from "@/lib/firebase";
 
 // Form validation schemas
@@ -70,12 +71,14 @@ export default function SubmitReport() {
   // Queries for fetching reports
   const { data: submittedAccidentReports = [] } = useQuery({
     queryKey: ['accidentReports'],
-    queryFn: () => firebaseService.getAccidentReports()
+    queryFn: () => firebaseService.getAccidentReports(),
+    refetchInterval: 5000 // Refetch every 5 seconds to keep data fresh
   });
 
   const { data: submittedTrafficReports = [] } = useQuery({
     queryKey: ['trafficReports'],
-    queryFn: () => firebaseService.getTrafficReports()
+    queryFn: () => firebaseService.getTrafficReports(),
+    refetchInterval: 5000 // Refetch every 5 seconds to keep data fresh
   });
 
   // Form setup
@@ -95,6 +98,15 @@ export default function SubmitReport() {
       severity: 1,
     },
   });
+
+  // Sort reports by timestamp in descending order (most recent first)
+  const sortedAccidentReports = [...submittedAccidentReports].sort((a, b) => 
+    new Date(b.timestamp) - new Date(a.timestamp)
+  );
+
+  const sortedTrafficReports = [...submittedTrafficReports].sort((a, b) => 
+    new Date(b.timestamp) - new Date(a.timestamp)
+  );
 
   // Mutations
   const accidentMutation = useMutation({
@@ -303,32 +315,37 @@ export default function SubmitReport() {
             </CardContent>
           </Card>
 
-          {/* Display Recent Accident Reports */}
+          {/* Display Recent Accident Reports with ScrollArea */}
           <Card className="mt-8">
             <CardHeader>
-              <CardTitle>Recent Accident Reports</CardTitle>
+              <CardTitle className="flex items-center justify-between">
+                Recent Accident Reports
+                <ChevronDown className="h-4 w-4 text-muted-foreground" />
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {submittedAccidentReports.slice(0, 5).map((report, index) => (
-                  <div key={index} className="border-b pb-4 last:border-0">
-                    <div className="flex justify-between items-start mb-2">
-                      <p className="font-medium">{report.location}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {formatTimestamp(report.timestamp)}
-                      </p>
+              <ScrollArea className="h-[400px] w-full rounded-md border p-4">
+                <div className="space-y-4">
+                  {sortedAccidentReports.map((report, index) => (
+                    <div key={index} className="border-b pb-4 last:border-0">
+                      <div className="flex justify-between items-start mb-2">
+                        <p className="font-medium">{report.location}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {formatTimestamp(report.timestamp)}
+                        </p>
+                      </div>
+                      <p className="text-sm text-muted-foreground">{report.description}</p>
+                      <div className="mt-2 flex gap-4 text-sm">
+                        <span>Vehicles: {report.vehiclesInvolved}</span>
+                        <span>Injuries: {report.injuryCount}</span>
+                        {report.medicalAssistance && (
+                          <span className="text-red-500">Medical Assistance Required</span>
+                        )}
+                      </div>
                     </div>
-                    <p className="text-sm text-muted-foreground">{report.description}</p>
-                    <div className="mt-2 flex gap-4 text-sm">
-                      <span>Vehicles: {report.vehiclesInvolved}</span>
-                      <span>Injuries: {report.injuryCount}</span>
-                      {report.medicalAssistance && (
-                        <span className="text-red-500">Medical Assistance Required</span>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              </ScrollArea>
             </CardContent>
           </Card>
         </TabsContent>
@@ -411,28 +428,33 @@ export default function SubmitReport() {
             </CardContent>
           </Card>
 
-          {/* Display Recent Traffic Reports */}
+          {/* Display Recent Traffic Reports with ScrollArea */}
           <Card className="mt-8">
             <CardHeader>
-              <CardTitle>Recent Traffic Reports</CardTitle>
+              <CardTitle className="flex items-center justify-between">
+                Recent Traffic Reports
+                <ChevronDown className="h-4 w-4 text-muted-foreground" />
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {submittedTrafficReports.slice(0, 5).map((report, index) => (
-                  <div key={index} className="border-b pb-4 last:border-0">
-                    <div className="flex justify-between items-start mb-2">
-                      <p className="font-medium">{report.location}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {formatTimestamp(report.timestamp)}
-                      </p>
+              <ScrollArea className="h-[400px] w-full rounded-md border p-4">
+                <div className="space-y-4">
+                  {sortedTrafficReports.map((report, index) => (
+                    <div key={index} className="border-b pb-4 last:border-0">
+                      <div className="flex justify-between items-start mb-2">
+                        <p className="font-medium">{report.location}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {formatTimestamp(report.timestamp)}
+                        </p>
+                      </div>
+                      <p className="text-sm text-muted-foreground">{report.description}</p>
+                      <div className="mt-2 flex gap-4 text-sm">
+                        <span>Severity: {report.severity}</span>
+                      </div>
                     </div>
-                    <p className="text-sm text-muted-foreground">{report.description}</p>
-                    <div className="mt-2 flex gap-4 text-sm">
-                      <span>Severity: {report.severity}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              </ScrollArea>
             </CardContent>
           </Card>
         </TabsContent>
