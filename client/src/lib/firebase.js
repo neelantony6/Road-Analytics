@@ -2,6 +2,7 @@
 import { initializeApp } from "firebase/app";
 import { getDatabase, ref, push, get } from "firebase/database";
 
+// Firebase configuration
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain: `${import.meta.env.VITE_FIREBASE_PROJECT_ID}.firebaseapp.com`,
@@ -9,6 +10,10 @@ const firebaseConfig = {
   projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
   appId: import.meta.env.VITE_FIREBASE_APP_ID
 };
+
+// Debug log to check URL format (without exposing the actual URL)
+console.log('Initializing Firebase with database URL pattern:', 
+  firebaseConfig.databaseURL?.includes('firebaseio.com') ? 'Valid URL pattern' : 'Invalid URL pattern');
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
@@ -81,7 +86,10 @@ export const firebaseService = {
     try {
       console.log('Submitting accident report:', data); // Debug log
       const reportsRef = ref(db, 'accident_reports');
-      const result = await push(reportsRef, data);
+      const result = await push(reportsRef, {
+        ...data,
+        timestamp: new Date().toISOString()
+      });
       console.log('Successfully submitted report:', result.key); // Debug log
       return true;
     } catch (error) {
@@ -114,7 +122,10 @@ export const firebaseService = {
     try {
       console.log('Submitting traffic report:', data); // Debug log
       const reportsRef = ref(db, 'traffic_reports');
-      const result = await push(reportsRef, data);
+      const result = await push(reportsRef, {
+        ...data,
+        timestamp: new Date().toISOString()
+      });
       console.log('Successfully submitted traffic report:', result.key); // Debug log
       return true;
     } catch (error) {
@@ -123,7 +134,21 @@ export const firebaseService = {
     }
   },
 
-  // Submit safety suggestion
+  // Get traffic reports
+  async getTrafficReports() {
+    try {
+      const reportsRef = ref(db, 'traffic_reports');
+      const snapshot = await get(reportsRef);
+      if (snapshot.exists()) {
+        return Object.values(snapshot.val());
+      }
+      return [];
+    } catch (error) {
+      console.error('Error fetching traffic reports:', error);
+      throw new Error('Failed to fetch traffic reports. Please try again.');
+    }
+  },
+    // Submit safety suggestion
   async submitSafetySuggestion(data) {
     try {
       const suggestionsRef = ref(db, 'safety_suggestions');

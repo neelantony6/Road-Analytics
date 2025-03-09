@@ -3,6 +3,8 @@ import { Card } from "@/components/ui/card";
 import { TrendingDown, TrendingUp } from "lucide-react";
 import RoadAccidentGraph from "@/components/charts/road-accident-graph";
 import StateComparison from "@/components/charts/state-comparison";
+import { firebaseService } from "@/lib/firebase";
+import { useQuery } from "@tanstack/react-query";
 
 // I collected this data from government reports to analyze road safety trends
 const mockData = {
@@ -40,6 +42,14 @@ const mockData = {
   }
 };
 
+// Fetch submitted reports from Firebase
+function useSubmittedReports() {
+  return useQuery({
+    queryKey: ['submittedReports'],
+    queryFn: () => firebaseService.getAccidentReports()
+  });
+}
+
 // My custom analysis function to understand accident trends
 function calculateTrends(data) {
   const states = Object.keys(data.yearly_data);
@@ -74,6 +84,12 @@ function calculateTrends(data) {
 function AnalyticsView() {
   const [selectedYear, setSelectedYear] = useState("2019");
   const trends = calculateTrends(mockData);
+  const { data: submittedReports = [] } = useSubmittedReports();
+
+  // Calculate statistics from submitted reports
+  const recentSubmissions = submittedReports.slice(0, 5);
+  const totalInjuries = submittedReports.reduce((sum, report) => sum + report.injuryCount, 0);
+  const medicalAssistanceCases = submittedReports.filter(report => report.medicalAssistance).length;
 
   return (
     <div className="container mx-auto px-4 py-8 space-y-8">
@@ -131,21 +147,31 @@ function AnalyticsView() {
         </Card>
       </div>
 
-      {/* State Distribution */}
-      <div className="grid gap-6">
-        <div className="flex justify-end mb-4">
-          <select 
-            value={selectedYear} 
-            onChange={(e) => setSelectedYear(e.target.value)}
-            className="px-4 py-2 border rounded-md"
-          >
-            {["2016", "2017", "2018", "2019"].map(year => (
-              <option key={year} value={year}>{year}</option>
-            ))}
-          </select>
+      {/* Recent Submissions */}
+      <Card className="p-6">
+        <h3 className="text-xl font-semibold mb-4">Recent Accident Reports</h3>
+        <div className="space-y-4">
+          {recentSubmissions.map((report, index) => (
+            <div key={index} className="border-b pb-4 last:border-0">
+              <p className="font-medium">{report.location}</p>
+              <p className="text-sm text-muted-foreground">{report.description}</p>
+              <div className="mt-2 flex gap-4 text-sm">
+                <span>Vehicles: {report.vehiclesInvolved}</span>
+                <span>Injuries: {report.injuryCount}</span>
+                {report.medicalAssistance && (
+                  <span className="text-red-500">Medical Assistance Required</span>
+                )}
+              </div>
+            </div>
+          ))}
         </div>
-        <StateComparison data={mockData} selectedYear={selectedYear} />
-      </div>
+        <div className="mt-4 pt-4 border-t">
+          <p className="text-sm text-muted-foreground">
+            Total Reports: {submittedReports.length} | Total Injuries: {totalInjuries} | 
+            Medical Assistance Cases: {medicalAssistanceCases}
+          </p>
+        </div>
+      </Card>
 
       {/* Trend Chart */}
       <div className="grid gap-6">

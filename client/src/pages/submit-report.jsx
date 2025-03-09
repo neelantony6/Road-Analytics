@@ -48,6 +48,7 @@ const trafficReportSchema = z.object({
     .max(500, "Description must not exceed 500 characters"),
 });
 
+// API functions
 async function submitAccidentReport(data) {
   const response = await fetch('/api/accidents', {
     method: 'POST',
@@ -85,6 +86,18 @@ async function submitTrafficReport(data) {
 export default function SubmitReport() {
   const { toast } = useToast();
   const [error] = useState(null);
+
+  // Query for fetching submitted reports
+  const { data: submittedReports = [] } = useQuery({
+    queryKey: ['accidentReports'],
+    queryFn: async () => {
+      const response = await fetch('/api/accidents');
+      if (!response.ok) {
+        throw new Error('Failed to fetch accident reports');
+      }
+      return response.json();
+    }
+  });
 
   // Form setup
   const accidentForm = useForm({
@@ -391,6 +404,30 @@ export default function SubmitReport() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Display Recent Submissions */}
+      <Card className="mt-8">
+        <CardHeader>
+          <CardTitle>Recent Submissions</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {submittedReports.slice(0, 5).map((report, index) => (
+              <div key={index} className="border-b pb-4 last:border-0">
+                <p className="font-medium">{report.location}</p>
+                <p className="text-sm text-muted-foreground">{report.description}</p>
+                <div className="mt-2 flex gap-4 text-sm">
+                  <span>Vehicles: {report.vehiclesInvolved}</span>
+                  <span>Injuries: {report.injuryCount}</span>
+                  {report.medicalAssistance && (
+                    <span className="text-red-500">Medical Assistance Required</span>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
