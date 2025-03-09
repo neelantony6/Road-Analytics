@@ -5,7 +5,6 @@ import AccidentTrends from "@/components/charts/accident-trends";
 import RoadAccidentGraph from "@/components/charts/road-accident-graph";
 import AccidentSearch from "@/components/search/accident-search";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import IndiaMap from "@/components/charts/india-map";
 
 // Complete data from the CSV file
 const mockData = {
@@ -206,12 +205,6 @@ export default function Dashboard() {
           selectedState={selectedState}
           onStateChange={setSelectedState}
         />
-      </div>
-
-      <div className="grid gap-6 mb-6">
-        <Card className="p-4">
-          <IndiaMap data={mockData} selectedYear={selectedYear} />
-        </Card>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 mb-6">
